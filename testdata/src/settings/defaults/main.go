@@ -1,0 +1,25 @@
+package defaults
+
+// Test packing logic with default settings (MaxLineLen=120).
+
+type MyStruct struct {
+	// This fits in one line, should collapse
+	Short func(
+		a int,
+		b int,
+	) error // want "Signature fits in one line"
+
+	// This is long, should NOT collapse, but should PACK (reformat)
+	// assuming 120 chars limit.
+	// We make it just long enough to NOT fit in 120 chars if we concatenate everything blindly?
+	// No, we want it to NOT fit in 120 chars as one line, but fit better when packed.
+	// Actually, if it doesn't fit in one line, we reformat.
+	// If we have many params on separate lines, we try to pack them.
+	Long func(
+		param1VeryLongName int,
+		param2VeryLongName int,
+		param3VeryLongName int,
+		param4VeryLongName int,
+		param5VeryLongName int,
+	) error // want "Signature can be formatted better"
+}

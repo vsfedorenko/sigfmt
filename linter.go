@@ -13,20 +13,33 @@ import (
 
 const (
 	defaultMaxLineLen         = 120
+	defaultTabWidth           = 8
 	analyzerName              = "funcwrap"
 	analyzerDoc               = "Checks if multi-line function signatures can be collapsed to one line or formatted better"
 	diagnosticMessage         = "Signature fits in one line"
 	diagnosticMessageReformat = "Signature can be formatted better"
 	fixMessage                = "Collapse to one line"
 	fixMessageReformat        = "Reformat with grouped parameters"
+
+	// Action types for signature formatting
+	actionCollapse = "collapse"
+	actionReformat = "reformat"
 )
 
 func init() {
 	register.Plugin(analyzerName, New)
 }
 
+// Settings содержит настройки линтера
+type Settings struct {
+	MaxLineLen           int
+	TabWidth             int
+	PackStructFields     bool
+	PackInterfaceMethods bool
+}
+
 type PluginLineWrap struct {
-	settings struct{ MaxLineLen int }
+	settings Settings
 }
 
 // signatureInfo содержит информацию о сигнатуре для проверки
@@ -45,13 +58,25 @@ type signatureInfo struct {
 
 func New(settings any) (register.LinterPlugin, error) {
 	p := &PluginLineWrap{}
-	if s, ok := settings.(map[string]any); ok {
-		if v, _ := s["max-line-len"].(float64); v > 0 {
+	// Set defaults
+	p.settings.MaxLineLen = defaultMaxLineLen
+	p.settings.TabWidth = defaultTabWidth
+	p.settings.PackStructFields = true
+	p.settings.PackInterfaceMethods = true
+
+	if s, ok := settings.(map[string]interface{}); ok {
+		if v, ok := s["max-line-len"].(float64); ok && v > 0 {
 			p.settings.MaxLineLen = int(v)
 		}
-	}
-	if p.settings.MaxLineLen == 0 {
-		p.settings.MaxLineLen = defaultMaxLineLen
+		if v, ok := s["tab-width"].(float64); ok && v > 0 {
+			p.settings.TabWidth = int(v)
+		}
+		if v, ok := s["pack-struct-fields"].(bool); ok {
+			p.settings.PackStructFields = v
+		}
+		if v, ok := s["pack-interface-methods"].(bool); ok {
+			p.settings.PackInterfaceMethods = v
+		}
 	}
 	return p, nil
 }
@@ -100,7 +125,7 @@ func (p *PluginLineWrap) checkFuncDecl(pass *analysis.Pass, decl *ast.FuncDecl) 
 		return
 	}
 
-	action := p.checkSignature(pass.Fset, sig)
+	action := p.checkSignature(pass, sig)
 	if action != "" {
 		p.report(pass, sig, action)
 	}
@@ -116,7 +141,7 @@ func (p *PluginLineWrap) checkFuncLit(pass *analysis.Pass, lit *ast.FuncLit) {
 		return
 	}
 
-	action := p.checkSignature(pass.Fset, sig)
+	action := p.checkSignature(pass, sig)
 	if action != "" {
 		p.report(pass, sig, action)
 	}
@@ -142,7 +167,7 @@ func (p *PluginLineWrap) checkInterface(pass *analysis.Pass, iface *ast.Interfac
 			continue
 		}
 
-		action := p.checkSignature(pass.Fset, sig)
+		action := p.checkSignature(pass, sig)
 		if action != "" {
 			p.report(pass, sig, action)
 		}
@@ -170,78 +195,100 @@ func (p *PluginLineWrap) checkStruct(pass *analysis.Pass, structType *ast.Struct
 			continue
 		}
 
-		action := p.checkSignature(pass.Fset, sig)
+		action := p.checkSignature(pass, sig)
 		if action != "" {
 			p.report(pass, sig, action)
 		}
 	}
 }
 
-// checkSignature проверяет, нужно ли изменить форматирование сигнатуры
-// Возвращает "collapse" если нужно схлопнуть в одну строку,
-// "reformat" если нужно улучшить многострочное форматирование,
+// checkSignature проверяет, нужно ли изменить форматирование сигнатуры.
+// Возвращает actionCollapse если нужно схлопнуть в одну строку,
+// actionReformat если нужно улучшить многострочное форматирование,
 // или "" если изменений не требуется
-func (p *PluginLineWrap) checkSignature(fset *token.FileSet, sig *signatureInfo) string {
+func (p *PluginLineWrap) checkSignature(pass *analysis.Pass, sig *signatureInfo) string {
+	fset := pass.Fset
 	startLine := fset.Position(sig.start).Line
 	endLine := fset.Position(sig.end).Line
 
-	// Если уже в одну строку, ничего не делаем
-	if startLine == endLine {
+	// Если однострочная версия сигнатуры помещается в MaxLineLen
+	if p.visualLength(sig.oneLineText) <= p.settings.MaxLineLen {
+		// Если сигнатура сейчас многострочная, но помещается в одну, предлагаем схлопнуть
+		if startLine != endLine {
+			return actionCollapse
+		}
+		// Иначе (уже в одну строку и помещается), ничего не делаем
 		return ""
 	}
 
-	// fmt.Printf("DEBUG: %s len=%d max=%d\n", sig.name, len(sig.oneLineText), p.settings.MaxLineLen)
-
-	// Если помещается в одну строку, предлагаем схлопнуть
-	if len(sig.oneLineText) <= p.settings.MaxLineLen {
-		return "collapse"
-	}
-
 	// Если не помещается в одну строку, проверяем, можно ли улучшить форматирование
-	if p.shouldReformat(fset, sig) {
-		sig.reformattedText = p.buildReformattedSignature(fset, sig)
-		return "reformat"
+	if p.shouldReformat(pass.Fset, sig) {
+		sig.reformattedText = p.buildReformattedSignature(pass.Fset, sig)
+		return actionReformat
 	}
 
 	return ""
 }
 
-// shouldReformat проверяет, нужно ли переформатировать многострочную сигнатуру
+// visualLength вычисляет визуальную длину строки с учетом табуляции
+func (p *PluginLineWrap) visualLength(s string) int {
+	length := 0
+	for _, c := range s {
+		if c == '\t' {
+			length += p.settings.TabWidth
+		} else {
+			length++
+		}
+	}
+	return length
+}
+
+// shouldReformat проверяет, нужно ли переформатировать многострочную сигнатуру.
+// Возвращает true, если сигнатуру можно упаковать компактнее.
 func (p *PluginLineWrap) shouldReformat(fset *token.FileSet, sig *signatureInfo) bool {
-	// Проверяем, что есть funcType для анализа
 	if sig.funcType == nil || sig.funcType.Params == nil {
 		return false
 	}
 
-	// Проверяем, что параметры действительно разбиты по строкам
-	// (каждый параметр на отдельной строке)
+	// Не реформатируем однострочные сигнатуры
+	if fset.Position(sig.start).Line == fset.Position(sig.end).Line {
+		return false
+	}
+
 	params := sig.funcType.Params.List
 	if len(params) <= 1 {
 		return false
 	}
 
-	// Если это метод интерфейса или поле структуры, мы всегда хотим попробовать
-	// упаковать их компактнее (агрессивное форматирование).
-	if sig.isInterfaceMethod || sig.isStructField {
+	// Для методов интерфейсов и полей структур применяем агрессивное форматирование
+	// (упаковка параметров), если это разрешено настройками
+	if sig.isInterfaceMethod && p.settings.PackInterfaceMethods {
+		return true
+	}
+	if sig.isStructField && p.settings.PackStructFields {
 		return true
 	}
 
-	// Для обычных функций (standalone) сохраняем старое поведение:
-	// если параметры уже на отдельных строках, не трогаем их.
-	firstLine := fset.Position(params[0].Pos()).Line
-	allOnSeparateLines := true
-	for i := 1; i < len(params); i++ {
-		if fset.Position(params[i].Pos()).Line == firstLine {
-			allOnSeparateLines = false
-			break
-		}
-		firstLine = fset.Position(params[i].Pos()).Line
+	// Для обычных функций: реформатируем только если параметры НЕ на отдельных строках
+	// (т.е. если они уже аккуратно разбиты построчно, оставляем как есть)
+	return !p.areParamsOnSeparateLines(fset, params)
+}
+
+// areParamsOnSeparateLines проверяет, находится ли каждый параметр на отдельной строке
+func (p *PluginLineWrap) areParamsOnSeparateLines(fset *token.FileSet, params []*ast.Field) bool {
+	if len(params) <= 1 {
+		return true
 	}
 
-	// Если параметры уже на отдельных строках, по умолчанию считаем,
-	// что форматирование уже корректное (или пользователь так захотел)
-	// и не пытаемся его "улучшить" (сжать).
-	return !allOnSeparateLines
+	prevLine := fset.Position(params[0].Pos()).Line
+	for i := 1; i < len(params); i++ {
+		currentLine := fset.Position(params[i].Pos()).Line
+		if currentLine == prevLine {
+			return false
+		}
+		prevLine = currentLine
+	}
+	return true
 }
 
 // buildReformattedSignature генерирует улучшенное многострочное форматирование
@@ -297,8 +344,8 @@ func (p *PluginLineWrap) renderFieldListGrouped(fset *token.FileSet, fl *ast.Fie
 		prefixLen -= len(p.renderResults(fset, sig.funcType.Results))
 	}
 
-	// Получаем отступ для продолжения строк (используем табуляцию)
-	indent := "\t"
+	// Получаем отступ для продолжения строк
+	indent := "\t" // Standard Go indentation
 
 	var lines []string
 	var currentLine strings.Builder
@@ -333,7 +380,7 @@ func (p *PluginLineWrap) renderFieldListGrouped(fset *token.FileSet, fl *ast.Fie
 			currentLine.Reset()
 			currentLine.WriteString(indent)
 			currentLine.WriteString(fieldStr)
-			currentLineLen = 8 + len(fieldStr) // 8 for tab width
+			currentLineLen = p.settings.TabWidth + len(fieldStr)
 		} else {
 			// Добавляем на текущую строку
 			if currentLine.Len() > len(openBracket) {
@@ -351,17 +398,21 @@ func (p *PluginLineWrap) renderFieldListGrouped(fset *token.FileSet, fl *ast.Fie
 	return strings.Join(lines, "\n")
 }
 
+// computeDiagPos вычисляет позицию для диагностики (закрывающая скобка параметров или результатов)
+func computeDiagPos(params *ast.FieldList, results *ast.FieldList) token.Pos {
+	diagPos := params.Closing
+	if results != nil && results.Closing.IsValid() {
+		diagPos = results.Closing
+	}
+	return diagPos
+}
+
 // extractFuncDeclSignature извлекает информацию о сигнатуре функции
 func (p *PluginLineWrap) extractFuncDeclSignature(fset *token.FileSet, decl *ast.FuncDecl) *signatureInfo {
 	start := decl.Type.Func
 	end := decl.Type.Params.End()
-	diagPos := decl.Type.Params.Closing
-
 	if decl.Type.Results != nil {
 		end = decl.Type.Results.End()
-		if decl.Type.Results.Closing.IsValid() {
-			diagPos = decl.Type.Results.Closing
-		}
 	}
 
 	if !start.IsValid() || !end.IsValid() {
@@ -371,7 +422,7 @@ func (p *PluginLineWrap) extractFuncDeclSignature(fset *token.FileSet, decl *ast
 	return &signatureInfo{
 		start:         start,
 		end:           end,
-		diagPos:       diagPos,
+		diagPos:       computeDiagPos(decl.Type.Params, decl.Type.Results),
 		oneLineText:   p.buildFuncDeclSignature(fset, decl),
 		funcType:      decl.Type,
 		receiver:      decl.Recv,
@@ -384,13 +435,8 @@ func (p *PluginLineWrap) extractFuncDeclSignature(fset *token.FileSet, decl *ast
 func (p *PluginLineWrap) extractFuncLitSignature(fset *token.FileSet, lit *ast.FuncLit) *signatureInfo {
 	start := lit.Type.Func
 	end := lit.Type.Params.End()
-	diagPos := lit.Type.Params.Closing
-
 	if lit.Type.Results != nil {
 		end = lit.Type.Results.End()
-		if lit.Type.Results.Closing.IsValid() {
-			diagPos = lit.Type.Results.Closing
-		}
 	}
 
 	if !start.IsValid() || !end.IsValid() {
@@ -400,7 +446,7 @@ func (p *PluginLineWrap) extractFuncLitSignature(fset *token.FileSet, lit *ast.F
 	return &signatureInfo{
 		start:         start,
 		end:           end,
-		diagPos:       diagPos,
+		diagPos:       computeDiagPos(lit.Type.Params, lit.Type.Results),
 		oneLineText:   p.buildFuncLitSignature(fset, lit.Type),
 		funcType:      lit.Type,
 		receiver:      nil,
@@ -413,13 +459,8 @@ func (p *PluginLineWrap) extractFuncLitSignature(fset *token.FileSet, lit *ast.F
 func (p *PluginLineWrap) extractMethodSignature(fset *token.FileSet, name *ast.Ident, ft *ast.FuncType) *signatureInfo {
 	start := name.Pos()
 	end := ft.Params.End()
-	diagPos := ft.Params.Closing
-
 	if ft.Results != nil {
 		end = ft.Results.End()
-		if ft.Results.Closing.IsValid() {
-			diagPos = ft.Results.Closing
-		}
 	}
 
 	if !start.IsValid() || !end.IsValid() {
@@ -429,7 +470,7 @@ func (p *PluginLineWrap) extractMethodSignature(fset *token.FileSet, name *ast.I
 	return &signatureInfo{
 		start:             start,
 		end:               end,
-		diagPos:           diagPos,
+		diagPos:           computeDiagPos(ft.Params, ft.Results),
 		oneLineText:       p.buildMethodSignature(fset, name.Name, ft),
 		funcType:          ft,
 		receiver:          nil,
@@ -443,13 +484,8 @@ func (p *PluginLineWrap) extractMethodSignature(fset *token.FileSet, name *ast.I
 func (p *PluginLineWrap) extractStructFieldSignature(fset *token.FileSet, name *ast.Ident, ft *ast.FuncType) *signatureInfo {
 	start := name.Pos()
 	end := ft.Params.End()
-	diagPos := ft.Params.Closing
-
 	if ft.Results != nil {
 		end = ft.Results.End()
-		if ft.Results.Closing.IsValid() {
-			diagPos = ft.Results.Closing
-		}
 	}
 
 	if !start.IsValid() || !end.IsValid() {
@@ -459,7 +495,7 @@ func (p *PluginLineWrap) extractStructFieldSignature(fset *token.FileSet, name *
 	return &signatureInfo{
 		start:         start,
 		end:           end,
-		diagPos:       diagPos,
+		diagPos:       computeDiagPos(ft.Params, ft.Results),
 		oneLineText:   p.buildStructFieldSignature(fset, name.Name, ft),
 		funcType:      ft,
 		receiver:      nil,
@@ -468,97 +504,54 @@ func (p *PluginLineWrap) extractStructFieldSignature(fset *token.FileSet, name *
 	}
 }
 
-// buildFuncDeclSignature собирает односрочную версию сигнатуры функции
-func (p *PluginLineWrap) buildFuncDeclSignature(fset *token.FileSet, decl *ast.FuncDecl) string {
+// buildSignature - универсальная функция для построения односрочных сигнатур
+func (p *PluginLineWrap) buildSignature(fset *token.FileSet, prefix string, ft *ast.FuncType, results *ast.FieldList) string {
 	var sb strings.Builder
-
-	sb.WriteString("func ")
-
-	// Receiver (для методов)
-	if decl.Recv != nil {
-		sb.WriteString(p.renderFieldList(fset, decl.Recv, "(", ")"))
-		sb.WriteString(" ")
-	}
-
-	// Имя функции
-	sb.WriteString(decl.Name.Name)
+	sb.WriteString(prefix)
 
 	// Type parameters (дженерики)
-	if decl.Type.TypeParams != nil {
-		sb.WriteString(p.renderFieldList(fset, decl.Type.TypeParams, "[", "]"))
+	if ft.TypeParams != nil {
+		sb.WriteString(p.renderFieldList(fset, ft.TypeParams, "[", "]"))
 	}
 
 	// Параметры
-	sb.WriteString(p.renderFieldList(fset, decl.Type.Params, "(", ")"))
+	sb.WriteString(p.renderFieldList(fset, ft.Params, "(", ")"))
 
 	// Результаты
-	if decl.Type.Results != nil {
-		sb.WriteString(p.renderResults(fset, decl.Type.Results))
+	if results != nil {
+		sb.WriteString(p.renderResults(fset, results))
 	}
 
 	return sb.String()
+}
+
+// buildFuncDeclSignature собирает односрочную версию сигнатуры функции
+func (p *PluginLineWrap) buildFuncDeclSignature(fset *token.FileSet, decl *ast.FuncDecl) string {
+	var prefix strings.Builder
+	prefix.WriteString("func ")
+
+	if decl.Recv != nil {
+		prefix.WriteString(p.renderFieldList(fset, decl.Recv, "(", ")"))
+		prefix.WriteString(" ")
+	}
+
+	prefix.WriteString(decl.Name.Name)
+	return p.buildSignature(fset, prefix.String(), decl.Type, decl.Type.Results)
 }
 
 // buildFuncLitSignature собирает односрочную версию сигнатуры функционального литерала
 func (p *PluginLineWrap) buildFuncLitSignature(fset *token.FileSet, ft *ast.FuncType) string {
-	var sb strings.Builder
-
-	sb.WriteString("func")
-
-	// Type parameters (дженерики)
-	if ft.TypeParams != nil {
-		sb.WriteString(p.renderFieldList(fset, ft.TypeParams, "[", "]"))
-	}
-
-	// Параметры
-	sb.WriteString(p.renderFieldList(fset, ft.Params, "(", ")"))
-
-	// Результаты
-	if ft.Results != nil {
-		sb.WriteString(p.renderResults(fset, ft.Results))
-	}
-
-	return sb.String()
+	return p.buildSignature(fset, "func", ft, ft.Results)
 }
 
 // buildMethodSignature собирает односрочную версию сигнатуры метода
 func (p *PluginLineWrap) buildMethodSignature(fset *token.FileSet, name string, ft *ast.FuncType) string {
-	var sb strings.Builder
-
-	sb.WriteString(name)
-
-	// Параметры
-	sb.WriteString(p.renderFieldList(fset, ft.Params, "(", ")"))
-
-	// Результаты
-	if ft.Results != nil {
-		sb.WriteString(p.renderResults(fset, ft.Results))
-	}
-
-	return sb.String()
+	return p.buildSignature(fset, name, ft, ft.Results)
 }
 
 // buildStructFieldSignature собирает односрочную версию поля структуры с типом func
 func (p *PluginLineWrap) buildStructFieldSignature(fset *token.FileSet, name string, ft *ast.FuncType) string {
-	var sb strings.Builder
-
-	sb.WriteString(name)
-	sb.WriteString(" func")
-
-	// Type parameters (дженерики)
-	if ft.TypeParams != nil {
-		sb.WriteString(p.renderFieldList(fset, ft.TypeParams, "[", "]"))
-	}
-
-	// Параметры
-	sb.WriteString(p.renderFieldList(fset, ft.Params, "(", ")"))
-
-	// Результаты
-	if ft.Results != nil {
-		sb.WriteString(p.renderResults(fset, ft.Results))
-	}
-
-	return sb.String()
+	return p.buildSignature(fset, name+" func", ft, ft.Results)
 }
 
 // renderResults рендерит возвращаемые значения
@@ -637,11 +630,11 @@ func (p *PluginLineWrap) report(pass *analysis.Pass, sig *signatureInfo, action 
 	var newText []byte
 
 	switch action {
-	case "collapse":
+	case actionCollapse:
 		message = diagnosticMessage
 		fixMsg = fixMessage
 		newText = []byte(sig.oneLineText)
-	case "reformat":
+	case actionReformat:
 		message = diagnosticMessageReformat
 		fixMsg = fixMessageReformat
 		newText = []byte(sig.reformattedText)

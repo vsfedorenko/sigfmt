@@ -1,0 +1,18 @@
+package pack_structs
+
+// MyStruct should be packed (reformatted).
+type MyStruct struct {
+	Field1 func(param1VeryLongName int, param2VeryLongName int, param3VeryLongName int, param4VeryLongName int,
+		param5VeryLongName int) error // want "Signature can be formatted better"
+}
+
+// MyInterface should NOT be packed.
+type MyInterface interface {
+	Method1(
+		param1VeryLongName int,
+		param2VeryLongName int,
+		param3VeryLongName int,
+		param4VeryLongName int,
+		param5VeryLongName int,
+	) // The linter should not touch this (PackInterfaceMethods: false)
+}

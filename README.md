@@ -74,6 +74,9 @@ func Sum(a int, b int) int { ... }
 
 **Параметры:**
 *   `max-line-len` (int): Максимальная допустимая длина строки. По умолчанию: `120`.
+*   `tab-width` (int): Ширина табуляции для расчета визуальной длины строки. По умолчанию: `8`.
+*   `pack-struct-fields` (bool): Включить упаковку полей структур с типом func. По умолчанию: `true`.
+*   `pack-interface-methods` (bool): Включить упаковку методов интерфейсов. По умолчанию: `true`.
 
 **Пример `.golangci.yml`:**
 
@@ -86,6 +89,9 @@ linters-settings:
       original-url: github.com/username/funcwrap
       settings:
         max-line-len: 120
+        tab-width: 8
+        pack-struct-fields: true
+        pack-interface-methods: true
 ```
 
 ## 🛠 Установка и Сборка
@@ -128,14 +134,62 @@ linters-settings:
 
 Проект имеет обширный набор тестов, покрывающих граничные случаи и различные конструкции языка.
 
-*   **Запуск тестов:**
-    ```bash
-    go test -v ./...
-    ```
+### Использование Makefile
 
-*   **Структура тестов:**
-    *   `testdata/src/features/`: Тесты на фичи языка (дженерики, комменты, вариадики).
-    *   `testdata/src/limits/`: Тесты на разные ограничения длины строки (80, 100, 120, 160).
+Проект включает `Makefile` для удобства разработки:
+
+```bash
+# Показать все доступные команды
+make help
+
+# Запустить тесты
+make test
+
+# Запустить тесты с race detector
+make test-race
+
+# Запустить тесты с покрытием
+make test-coverage
+
+# Обновить golden файлы
+make test-update-golden
+
+# Форматировать код
+make fmt
+
+# Запустить линтер
+make lint
+
+# Запустить все проверки (fmt, vet, lint, test)
+make check
+
+# Собрать кастомный golangci-lint binary
+make build-example
+
+# Запустить кастомный линтер на примере
+make run-example
+
+# Очистить артефакты сборки
+make clean
+```
+
+### Структура тестов
+
+*   `testdata/src/features/`: Тесты на фичи языка (дженерики, комменты, вариадики).
+*   `testdata/src/limits/`: Тесты на разные ограничения длины строки (80, 100, 120, 140, 160).
+*   `testdata/src/settings/`: Тесты на различные настройки линтера.
+
+### Обновление Golden файлов
+
+Golden файлы содержат ожидаемые результаты применения фиксов. Для их обновления используйте:
+
+```bash
+# Через Makefile (рекомендуется)
+make test-update-golden
+
+# Напрямую через GODEBUG
+GODEBUG=analysistest.fix=true go test ./...
+```
 
 ## Детали реализации
 

@@ -10,4 +10,17 @@ linters:
         type: "module"
         description: "Checks if multi-line function signatures can be collapsed to one line or formatted better"
         settings:
+          # Maximum line length for determining if signatures should be collapsed (default: 120)
           max-line-len: 120
+
+          # Tab width for visual length calculation (default: 8)
+          # This only affects how the linter calculates line length, not code formatting
+          tab-width: 8
+
+          # Enable/disable packing of struct fields with func type (default: true)
+          # When enabled, struct fields are reformatted to fit more compactly
+          pack-struct-fields: true
+
+          # Enable/disable packing of interface methods (default: true)
+          # When enabled, interface methods are reformatted to fit more compactly
+          pack-interface-methods: true
