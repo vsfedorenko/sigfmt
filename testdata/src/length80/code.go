@@ -1,0 +1,89 @@
+package length80
+
+// MaxLineLen: 80
+
+// Короткая функция - должна схлопнуться (< 80)
+func Short(
+	a int,
+	b int,
+) int { // want "Signature fits in one line"
+	return a + b
+}
+
+// Функция ровно 80 символов - уже в одну строку
+func ExactlyEighty(aa int, bb int, cc int, dd int, ee int, ff int) int {
+	return 0
+}
+
+// Функция больше 80 символов - схлопнется (79 символов)
+func OverEighty(
+	aaaaaa int,
+	bbbbbb int,
+	cccccc int,
+	dddddd int,
+	eeeeee int,
+) int { // want "Signature fits in one line"
+	return 0
+}
+
+// Функция ДЕЙСТВИТЕЛЬНО больше 80 - не должна схлопываться (82 символа)
+func ReallyOverEighty(
+	aaaaaaa int,
+	bbbbbbb int,
+	ccccccc int,
+	ddddddd int,
+	eeeeeee int,
+) int {
+	return 0
+}
+
+// Функция с дженериками - должна схлопнуться (< 80)
+func GenShort[
+	T any,
+](
+	v T,
+) T { // want "Signature fits in one line"
+	return v
+}
+
+// Функция с длинными дженериками - не должна схлопываться (> 80)
+func GenLong[
+	TWithVeryLongName any,
+	RWithVeryLongName any,
+](
+	value TWithVeryLongName,
+) RWithVeryLongName {
+	var zero RWithVeryLongName
+	return zero
+}
+
+// Метод - должен схлопнуться (< 80)
+type Calculator struct{}
+
+func (c *Calculator) Add(
+	x int,
+	y int,
+) int { // want "Signature fits in one line"
+	return x + y
+}
+
+// Интерфейсный метод - должен схлопнуться (< 80)
+type Simple interface {
+	Process(
+		data string,
+	) error // want "Signature fits in one line"
+}
+
+// Интерфейсный метод - схлопнется (73 символа)
+type Complex interface {
+	ProcessWithVeryLongMethodName(
+		dataWithVeryLongParameterName string,
+	) error // want "Signature fits in one line"
+}
+
+// Интерфейсный метод - ДЕЙСТВИТЕЛЬНО длинный (> 80)
+type ReallyComplex interface {
+	ProcessWithVeryLongMethodNameAndParameters(
+		dataWithVeryLongParameterName string,
+	) error
+}
