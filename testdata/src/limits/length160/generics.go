@@ -5,7 +5,7 @@ package length160
 // GenericFunction проверяет простую функцию с дженериками.
 func GenericFunction[T any](
 	v T,
-) T { // want "Signature fits in one line"
+) T { // want "Multi-line signature can be collapsed to one line"
 	return v
 }
 
@@ -19,7 +19,7 @@ type LongConstraintsInterface[T interface {
 		p2 T,
 		p3 T,
 		p4 T,
-	) // want "Signature fits in one line"
+	) // want "Multi-line signature can be collapsed to one line"
 }
 
 // MethodWithComplexGenericsInterface проверяет метод интерфейса со сложными дженериками.
@@ -29,7 +29,7 @@ type MethodWithComplexGenericsInterface[T interface{ int | string | ~bool }, R i
 		b R,
 		c T,
 		d R,
-	) // want "Signature fits in one line"
+	) // want "Multi-line signature can be collapsed to one line"
 }
 
 // --- Receiver with Generics ---
@@ -42,6 +42,6 @@ type Container[T any] struct {
 // Должен схлопнуться, если влазит.
 func (c *Container[T]) GetVal(
 	ctx interface{},
-) T { // want "Signature fits in one line"
+) T { // want "Multi-line signature can be collapsed to one line"
 	return c.val
 }

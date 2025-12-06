@@ -6,7 +6,7 @@ package length120
 func BlankShort(
 	_ int,
 	_ string,
-) {} // want "Signature fits in one line"
+) {} // want "Multi-line signature can be collapsed to one line"
 
 // MethodWithBlanksInterface проверяет пустые идентификаторы в интерфейсе.
 type MethodWithBlanksInterface interface {
@@ -15,7 +15,7 @@ type MethodWithBlanksInterface interface {
 		_ string,
 		_ bool,
 		_ float64,
-	) // want "Signature fits in one line"
+	) // want "Multi-line signature can be collapsed to one line"
 }
 
 // OuterFunction проверяет вложенные анонимные функции.
@@ -24,7 +24,7 @@ func OuterFunction() {
 	callback := func(
 		a int,
 		b int,
-	) int { // want "Signature fits in one line"
+	) int { // want "Multi-line signature can be collapsed to one line"
 		return a + b
 	}
 	_ = callback

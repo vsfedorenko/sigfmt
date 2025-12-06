@@ -7,7 +7,7 @@ import "context"
 func ShortFunction(
 	a int,
 	b string,
-) error { // want "Signature fits in one line"
+) error { // want "Multi-line signature can be collapsed to one line"
 	return nil
 }
 
@@ -30,7 +30,7 @@ func VeryLongFunctionThatShouldNotBeCollapsed(
 func MultipleReturns(
 	x int,
 	y int,
-) (int, error) { // want "Signature fits in one line"
+) (int, error) { // want "Multi-line signature can be collapsed to one line"
 	return x + y, nil
 }
 
@@ -38,14 +38,14 @@ func MultipleReturns(
 func NamedReturns(
 	a int,
 	b int,
-) (sum int, err error) { // want "Signature fits in one line"
+) (sum int, err error) { // want "Multi-line signature can be collapsed to one line"
 	return a + b, nil
 }
 
 // Функция с вариадическими параметрами.
 func Sum(
 	nums ...int,
-) int { // want "Signature fits in one line"
+) int { // want "Multi-line signature can be collapsed to one line"
 	total := 0
 	for _, n := range nums {
 		total += n
@@ -61,7 +61,7 @@ func NoParams() error {
 // Функция без возвращаемых значений.
 func NoReturn(
 	msg string,
-) { // want "Signature fits in one line"
+) { // want "Multi-line signature can be collapsed to one line"
 	println(msg)
 }
 
@@ -69,7 +69,7 @@ func NoReturn(
 func MixedParams(
 	a, b int,
 	c string,
-) error { // want "Signature fits in one line"
+) error { // want "Multi-line signature can be collapsed to one line"
 	return nil
 }
 
@@ -84,7 +84,7 @@ func Generic[
 	T any,
 ](
 	val T,
-) { // want "Signature fits in one line"
+) { // want "Multi-line signature can be collapsed to one line"
 }
 
 // Сложные дженерики с несколькими type parameters.
@@ -94,7 +94,7 @@ func Map[
 ](
 	items []T,
 	fn func(T) R,
-) []R { // want "Signature fits in one line"
+) []R { // want "Multi-line signature can be collapsed to one line"
 	result := make([]R, len(items))
 	for i, item := range items {
 		result[i] = fn(item)
@@ -111,7 +111,7 @@ type Calculator struct{}
 func (c *Calculator) Add(
 	a int,
 	b int,
-) int { // want "Signature fits in one line"
+) int { // want "Multi-line signature can be collapsed to one line"
 	return a + b
 }
 
@@ -124,7 +124,7 @@ func (c *Calculator) Multiply(x int, y int) int {
 var myFunc = func(
 	a int,
 	b int,
-) int { // want "Signature fits in one line"
+) int { // want "Multi-line signature can be collapsed to one line"
 	return a + b
 }
 

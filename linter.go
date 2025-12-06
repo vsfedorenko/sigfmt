@@ -15,9 +15,9 @@ const (
 	defaultMaxLineLen         = 120
 	defaultTabWidth           = 8
 	analyzerName              = "funcwrap"
-	analyzerDoc               = "Checks if multi-line function signatures can be collapsed to one line or formatted better"
-	diagnosticMessage         = "Signature fits in one line"
-	diagnosticMessageReformat = "Signature can be formatted better"
+	analyzerDoc               = "Checks if multi-line function signatures can be collapsed to one line or reformatted more compactly"
+	diagnosticMessage         = "Multi-line signature can be collapsed to one line"
+	diagnosticMessageReformat = "Signature can be reformatted more compactly"
 	fixMessage                = "Collapse to one line"
 	fixMessageReformat        = "Reformat with grouped parameters"
 

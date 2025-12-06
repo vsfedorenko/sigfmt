@@ -6,7 +6,7 @@ import "context"
 type MyInterface interface {
 	Method(
 		ctx context.Context,
-	) error // want "Signature fits in one line"
+	) error // want "Multi-line signature can be collapsed to one line"
 
 	// Метод уже в одну строку
 	OneLineMethod()
@@ -17,7 +17,7 @@ type ComplexInterface interface {
 	// Короткий метод - должен схлопнуться
 	Get(
 		id string,
-	) error // want "Signature fits in one line"
+	) error // want "Multi-line signature can be collapsed to one line"
 
 	// Длинный метод - должен остаться разбитым
 	ProcessWithVeryLongNameAndManyParameters(
@@ -25,7 +25,7 @@ type ComplexInterface interface {
 		parameterTwo string,
 		parameterThree string,
 		parameterFour string,
-	) error // want "Signature can be formatted better"
+	) error // want "Signature can be reformatted more compactly"
 
 	// Метод с контекстом
 	ProcessWithContext(
@@ -34,7 +34,7 @@ type ComplexInterface interface {
 		parameterTwo string,
 		parameterThree string,
 		parameterFour string,
-	) error // want "Signature can be formatted better"
+	) error // want "Signature can be reformatted more compactly"
 
 	// Очень много параметров
 	ProcessManyParams(
@@ -46,24 +46,24 @@ type ComplexInterface interface {
 		parameterSix string,
 		parameterSeven string,
 		parameterEight string,
-	) error // want "Signature can be formatted better"
+	) error // want "Signature can be reformatted more compactly"
 
 	// Метод с несколькими возвращаемыми значениями - должен схлопнуться
 	GetMultiple(
 		id string,
-	) (string, error) // want "Signature fits in one line"
+	) (string, error) // want "Multi-line signature can be collapsed to one line"
 
 	// Метод с именованными возвращаемыми значениями - должен схлопнуться
 	GetNamed(
 		id string,
-	) (result string, err error) // want "Signature fits in one line"
+	) (result string, err error) // want "Multi-line signature can be collapsed to one line"
 }
 
 // Интерфейс с дженериками.
 type GenericInterface[T any] interface {
 	Process(
 		item T,
-	) error // want "Signature fits in one line"
+	) error // want "Multi-line signature can be collapsed to one line"
 
 	GetAll() []T
 }
@@ -72,12 +72,12 @@ type GenericInterface[T any] interface {
 type MultiGenericInterface[K comparable, V any] interface {
 	Get(
 		key K,
-	) (V, bool) // want "Signature fits in one line"
+	) (V, bool) // want "Multi-line signature can be collapsed to one line"
 
 	Set(
 		key K,
 		value V,
-	) error // want "Signature fits in one line"
+	) error // want "Multi-line signature can be collapsed to one line"
 
 	Delete(key K)
 }
@@ -88,14 +88,14 @@ type VeryLongInterface interface {
 		parameterWithVeryLongName string,
 		anotherParameterWithVeryLongName string,
 		yetAnotherParameterWithVeryLongName string,
-	) error // want "Signature can be formatted better"
+	) error // want "Signature can be reformatted more compactly"
 }
 
 // Интерфейс с вариадическими параметрами.
 type VariadicInterface interface {
 	Process(
 		items ...string,
-	) error // want "Signature fits in one line"
+	) error // want "Multi-line signature can be collapsed to one line"
 }
 
 // Интерфейс с функциональными типами в параметрах.
@@ -103,7 +103,7 @@ type HandlerInterface interface {
 	Handle(
 		ctx context.Context,
 		handler func(string) error,
-	) error // want "Signature fits in one line"
+	) error // want "Multi-line signature can be collapsed to one line"
 
 	HandleMultiple(ctx context.Context, handlers ...func(string) error) error
 }
@@ -116,5 +116,5 @@ type MixedInterface interface {
 	Process(
 		a, b int,
 		c string,
-	) error // want "Signature fits in one line"
+	) error // want "Multi-line signature can be collapsed to one line"
 }

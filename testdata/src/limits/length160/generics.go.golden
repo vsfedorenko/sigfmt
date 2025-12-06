@@ -3,7 +3,7 @@ package length160
 // --- Generics (Type Parameters) ---
 
 // GenericFunction проверяет простую функцию с дженериками.
-func GenericFunction[T any](v T) T { // want "Signature fits in one line"
+func GenericFunction[T any](v T) T { // want "Multi-line signature can be collapsed to one line"
 	return v
 }
 
@@ -12,12 +12,12 @@ func GenericFunction[T any](v T) T { // want "Signature fits in one line"
 type LongConstraintsInterface[T interface {
 	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | uintptr | float32 | float64 | complex64 | complex128 | string
 }] interface {
-	Method(p1 T, p2 T, p3 T, p4 T) // want "Signature fits in one line"
+	Method(p1 T, p2 T, p3 T, p4 T) // want "Multi-line signature can be collapsed to one line"
 }
 
 // MethodWithComplexGenericsInterface проверяет метод интерфейса со сложными дженериками.
 type MethodWithComplexGenericsInterface[T interface{ int | string | ~bool }, R interface{ M() }] interface {
-	MethodWithComplexGenerics(a T, b R, c T, d R) // want "Signature fits in one line"
+	MethodWithComplexGenerics(a T, b R, c T, d R) // want "Multi-line signature can be collapsed to one line"
 }
 
 // --- Receiver with Generics ---
@@ -28,6 +28,6 @@ type Container[T any] struct {
 
 // MethodWithGenericReceiver проверяет метод на типе с дженериком.
 // Должен схлопнуться, если влазит.
-func (c *Container[T]) GetVal(ctx interface{}) T { // want "Signature fits in one line"
+func (c *Container[T]) GetVal(ctx interface{}) T { // want "Multi-line signature can be collapsed to one line"
 	return c.val
 }

@@ -14,5 +14,5 @@ type MyStruct struct {
 // MyInterface should be packed.
 type MyInterface interface {
 	Method1(param1VeryLongName int, param2VeryLongName int, param3VeryLongName int, param4VeryLongName int,
-		param5VeryLongName int) error // want "Signature can be formatted better"
+	param5VeryLongName int) error // want "Signature can be reformatted more compactly"
 }

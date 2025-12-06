@@ -4,7 +4,7 @@ import "context"
 
 // Обычная функция, разбитая на строки.
 // Должна схлопнуться, так как длина < 120.
-func ShortFunction(a int, b string) error { // want "Signature fits in one line"
+func ShortFunction(a int, b string) error { // want "Multi-line signature can be collapsed to one line"
 	return nil
 }
 
@@ -24,17 +24,17 @@ func VeryLongFunctionThatShouldNotBeCollapsed(
 }
 
 // Функция с несколькими возвращаемыми значениями.
-func MultipleReturns(x int, y int) (int, error) { // want "Signature fits in one line"
+func MultipleReturns(x int, y int) (int, error) { // want "Multi-line signature can be collapsed to one line"
 	return x + y, nil
 }
 
 // Функция с именованными возвращаемыми значениями.
-func NamedReturns(a int, b int) (sum int, err error) { // want "Signature fits in one line"
+func NamedReturns(a int, b int) (sum int, err error) { // want "Multi-line signature can be collapsed to one line"
 	return a + b, nil
 }
 
 // Функция с вариадическими параметрами.
-func Sum(nums ...int) int { // want "Signature fits in one line"
+func Sum(nums ...int) int { // want "Multi-line signature can be collapsed to one line"
 	total := 0
 	for _, n := range nums {
 		total += n
@@ -48,12 +48,12 @@ func NoParams() error {
 }
 
 // Функция без возвращаемых значений.
-func NoReturn(msg string) { // want "Signature fits in one line"
+func NoReturn(msg string) { // want "Multi-line signature can be collapsed to one line"
 	println(msg)
 }
 
 // Функция с mixed параметрами.
-func MixedParams(a, b int, c string) error { // want "Signature fits in one line"
+func MixedParams(a, b int, c string) error { // want "Multi-line signature can be collapsed to one line"
 	return nil
 }
 
@@ -64,11 +64,11 @@ func ExactlyAtLimit(aaaaaa int, bbbbbb int, cccccc int, dddddd int, eeeeee int, 
 
 // Дженерики (Generics).
 // Должно схлопнуться корректно: func Generic[T any](val T)
-func Generic[T any](val T) { // want "Signature fits in one line"
+func Generic[T any](val T) { // want "Multi-line signature can be collapsed to one line"
 }
 
 // Сложные дженерики с несколькими type parameters.
-func Map[T any, R any](items []T, fn func(T) R) []R { // want "Signature fits in one line"
+func Map[T any, R any](items []T, fn func(T) R) []R { // want "Multi-line signature can be collapsed to one line"
 	result := make([]R, len(items))
 	for i, item := range items {
 		result[i] = fn(item)
@@ -82,7 +82,7 @@ func AlreadyOneLineGeneric[T any](val T) T { return val }
 // Методы с receiver'ом.
 type Calculator struct{}
 
-func (c *Calculator) Add(a int, b int) int { // want "Signature fits in one line"
+func (c *Calculator) Add(a int, b int) int { // want "Multi-line signature can be collapsed to one line"
 	return a + b
 }
 
@@ -92,7 +92,7 @@ func (c *Calculator) Multiply(x int, y int) int {
 
 // Анонимная функция (Closure).
 // Назначение переменной.
-var myFunc = func(a int, b int) int { // want "Signature fits in one line"
+var myFunc = func(a int, b int) int { // want "Multi-line signature can be collapsed to one line"
 	return a + b
 }
 
