@@ -1,0 +1,13 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - funcwrap
+  settings:
+    custom:
+      funcwrap:
+        type: "module"
+        description: "Checks if multi-line function signatures can be collapsed to one line or formatted better"
+        settings:
+          max-line-len: 120

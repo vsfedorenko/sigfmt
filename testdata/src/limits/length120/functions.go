@@ -1,0 +1,133 @@
+package length120
+
+import "context"
+
+// Обычная функция, разбитая на строки.
+// Должна схлопнуться, так как длина < 120.
+func ShortFunction(
+	a int,
+	b string,
+) error { // want "Signature fits in one line"
+	return nil
+}
+
+// Функция уже в одну строку.
+// Линтер должен проигнорировать.
+func AlreadyOneLine(a int, b int) {}
+
+// Очень длинная функция.
+// Должна остаться разбитой.
+func VeryLongFunctionThatShouldNotBeCollapsed(
+	paramOneWithVeryLongName string,
+	paramTwoWithVeryLongName string,
+	paramThreeWithVeryLongName string,
+	paramFourWithVeryLongName string,
+	paramFiveWithVeryLongName string,
+) {
+}
+
+// Функция с несколькими возвращаемыми значениями.
+func MultipleReturns(
+	x int,
+	y int,
+) (int, error) { // want "Signature fits in one line"
+	return x + y, nil
+}
+
+// Функция с именованными возвращаемыми значениями.
+func NamedReturns(
+	a int,
+	b int,
+) (sum int, err error) { // want "Signature fits in one line"
+	return a + b, nil
+}
+
+// Функция с вариадическими параметрами.
+func Sum(
+	nums ...int,
+) int { // want "Signature fits in one line"
+	total := 0
+	for _, n := range nums {
+		total += n
+	}
+	return total
+}
+
+// Функция без параметров.
+func NoParams() error {
+	return nil
+}
+
+// Функция без возвращаемых значений.
+func NoReturn(
+	msg string,
+) { // want "Signature fits in one line"
+	println(msg)
+}
+
+// Функция с mixed параметрами.
+func MixedParams(
+	a, b int,
+	c string,
+) error { // want "Signature fits in one line"
+	return nil
+}
+
+// Граничный случай - ровно 120 символов.
+func ExactlyAtLimit(aaaaaa int, bbbbbb int, cccccc int, dddddd int, eeeeee int, ffffff int, gggggg int) int {
+	return 0
+}
+
+// Дженерики (Generics).
+// Должно схлопнуться корректно: func Generic[T any](val T)
+func Generic[
+	T any,
+](
+	val T,
+) { // want "Signature fits in one line"
+}
+
+// Сложные дженерики с несколькими type parameters.
+func Map[
+	T any,
+	R any,
+](
+	items []T,
+	fn func(T) R,
+) []R { // want "Signature fits in one line"
+	result := make([]R, len(items))
+	for i, item := range items {
+		result[i] = fn(item)
+	}
+	return result
+}
+
+// Функция уже в одну строку с дженериками (не должна изменяться).
+func AlreadyOneLineGeneric[T any](val T) T { return val }
+
+// Методы с receiver'ом.
+type Calculator struct{}
+
+func (c *Calculator) Add(
+	a int,
+	b int,
+) int { // want "Signature fits in one line"
+	return a + b
+}
+
+func (c *Calculator) Multiply(x int, y int) int {
+	return x * y
+}
+
+// Анонимная функция (Closure).
+// Назначение переменной.
+var myFunc = func(
+	a int,
+	b int,
+) int { // want "Signature fits in one line"
+	return a + b
+}
+
+var anotherFunc = func(ctx context.Context) error {
+	return nil
+}

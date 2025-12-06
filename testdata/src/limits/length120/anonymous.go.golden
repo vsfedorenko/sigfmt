@@ -1,0 +1,20 @@
+package length120
+
+// --- Anonymous Functions & Identifiers ---
+
+// BlankShort проверяет пустые идентификаторы.
+func BlankShort(_ int, _ string) {} // want "Signature fits in one line"
+
+// MethodWithBlanksInterface проверяет пустые идентификаторы в интерфейсе.
+type MethodWithBlanksInterface interface {
+	MethodWithBlanks(_ int, _ string, _ bool, _ float64) // want "Signature fits in one line"
+}
+
+// OuterFunction проверяет вложенные анонимные функции.
+func OuterFunction() {
+	// Анонимная функция внутри.
+	callback := func(a int, b int) int { // want "Signature fits in one line"
+		return a + b
+	}
+	_ = callback
+}

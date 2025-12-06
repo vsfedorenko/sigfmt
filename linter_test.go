@@ -1,116 +1,50 @@
 package linters
 
 import (
-    "testing"
+	"testing"
 
-    "github.com/stretchr/testify/require"
-    "golang.org/x/tools/go/analysis/analysistest"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/tools/go/analysis/analysistest"
 )
 
-// TestLineWrap_Basic тестирует базовые случаи с настройками по умолчанию (120)
-func TestLineWrap_Basic(t *testing.T) {
-    plugin := &PluginLineWrap{
-        settings: struct{ MaxLineLen int }{MaxLineLen: 120},
-    }
-
-    analyzers, err := plugin.BuildAnalyzers()
-    require.NoError(t, err, "Failed to build analyzers")
-    analyzer := analyzers[0]
-
-    analysistest.RunWithSuggestedFixes(t, analysistest.TestData(), analyzer, "cases")
+// TestLineWrap_Features проверяет корректность работы линтера с различными языковыми конструкциями
+// (функции, интерфейсы, структуры) при стандартной длине строки (120).
+func TestLineWrap_Features(t *testing.T) {
+	runTest(t, 120, "features")
 }
 
-// TestLineWrap_Length80 тестирует с максимальной длиной 80 символов
-func TestLineWrap_Length80(t *testing.T) {
-    plugin := &PluginLineWrap{
-        settings: struct{ MaxLineLen int }{MaxLineLen: 80},
-    }
+// TestLineWrap_Limits проверяет работу линтера с различными ограничениями длины строки.
+func TestLineWrap_Limits(t *testing.T) {
+	tests := []struct {
+		name   string
+		limit  int
+		pkg    string
+	}{
+		{"Limit_80", 80, "limits/length80"},
+		{"Limit_100", 100, "limits/length100"},
+		{"Limit_120", 120, "limits/length120"},
+		{"Limit_140", 140, "limits/length140"},
+		{"Limit_160", 160, "limits/length160"},
+	}
 
-    analyzers, err := plugin.BuildAnalyzers()
-    require.NoError(t, err, "Failed to build analyzers")
-    analyzer := analyzers[0]
-
-    analysistest.RunWithSuggestedFixes(t, analysistest.TestData(), analyzer, "length80")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			runTest(t, tt.limit, tt.pkg)
+		})
+	}
 }
 
-// TestLineWrap_Length100 тестирует с максимальной длиной 100 символов
-func TestLineWrap_Length100(t *testing.T) {
-    plugin := &PluginLineWrap{
-        settings: struct{ MaxLineLen int }{MaxLineLen: 100},
-    }
+// helper для запуска тестов
+func runTest(t *testing.T, maxLineLen int, pkgs ...string) {
+	t.Helper()
 
-    analyzers, err := plugin.BuildAnalyzers()
-    require.NoError(t, err, "Failed to build analyzers")
-    analyzer := analyzers[0]
+	plugin := &PluginLineWrap{
+		settings: struct{ MaxLineLen int }{MaxLineLen: maxLineLen},
+	}
 
-    analysistest.RunWithSuggestedFixes(t, analysistest.TestData(), analyzer, "length100")
-}
-
-// TestLineWrap_Length120 тестирует с максимальной длиной 120 символов
-func TestLineWrap_Length120(t *testing.T) {
-    plugin := &PluginLineWrap{
-        settings: struct{ MaxLineLen int }{MaxLineLen: 120},
-    }
-
-    analyzers, err := plugin.BuildAnalyzers()
-    require.NoError(t, err, "Failed to build analyzers")
-    analyzer := analyzers[0]
-
-    analysistest.RunWithSuggestedFixes(t, analysistest.TestData(), analyzer, "length120")
-}
-
-// TestLineWrap_Length140 тестирует с максимальной длиной 140 символов
-func TestLineWrap_Length140(t *testing.T) {
-    plugin := &PluginLineWrap{
-        settings: struct{ MaxLineLen int }{MaxLineLen: 140},
-    }
-
-    analyzers, err := plugin.BuildAnalyzers()
-    require.NoError(t, err, "Failed to build analyzers")
-    analyzer := analyzers[0]
-
-    analysistest.RunWithSuggestedFixes(t, analysistest.TestData(), analyzer, "length140")
-}
-
-// TestLineWrap_Length160 тестирует с максимальной длиной 160 символов
-func TestLineWrap_Length160(t *testing.T) {
-    plugin := &PluginLineWrap{
-        settings: struct{ MaxLineLen int }{MaxLineLen: 160},
-    }
-
-    analyzers, err := plugin.BuildAnalyzers()
-    require.NoError(t, err, "Failed to build analyzers")
-    analyzer := analyzers[0]
-
-    analysistest.RunWithSuggestedFixes(t, analysistest.TestData(), analyzer, "length160")
-}
-
-// TestLineWrap_AllConfigurations запускает все тесты последовательно
-func TestLineWrap_AllConfigurations(t *testing.T) {
-    testCases := []struct {
-        name      string
-        maxLen    int
-        pkg       string
-    }{
-        {"Basic_120", 120, "cases"},
-        {"Length_80", 80, "length80"},
-        {"Length_100", 100, "length100"},
-        {"Length_120", 120, "length120"},
-        {"Length_140", 140, "length140"},
-        {"Length_160", 160, "length160"},
-    }
-
-    for _, tc := range testCases {
-        t.Run(tc.name, func(t *testing.T) {
-            plugin := &PluginLineWrap{
-                settings: struct{ MaxLineLen int }{MaxLineLen: tc.maxLen},
-            }
-
-            analyzers, err := plugin.BuildAnalyzers()
-            require.NoError(t, err, "Failed to build analyzers")
-            analyzer := analyzers[0]
-
-            analysistest.RunWithSuggestedFixes(t, analysistest.TestData(), analyzer, tc.pkg)
-        })
-    }
+	analyzers, err := plugin.BuildAnalyzers()
+	require.NoError(t, err, "Failed to build analyzers")
+	require.Len(t, analyzers, 1, "Expected exactly one analyzer")
+	
+	analysistest.RunWithSuggestedFixes(t, analysistest.TestData(), analyzers[0], pkgs...)
 }

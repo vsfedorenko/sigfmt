@@ -1,0 +1,8 @@
+# The golangci-lint version used to build the custom binary.
+version: v2.7.1
+
+# The list of the plugins to integrate inside the custom binary.
+plugins:
+  # a plugin from local source
+  - module: 'github.com/vsfedorenko/sigfmt'
+    path: ../
