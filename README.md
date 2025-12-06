@@ -1,105 +1,147 @@
-# Line Wrap Linter
+# funcwrap — Linter for Go Function Signatures
 
-This is a linter plugin for `golangci-lint`.
+`funcwrap` — это мощный плагин-линтер для `golangci-lint`, предназначенный для автоматической проверки и форматирования сигнатур функций, методов и полевых функций в Go.
 
-## Overview
+## 🎯 Мотивация
 
-Line Wrap Linter checks Go function signatures and suggests better formatting. It mainly focuses on:
-1.  **Collapsing** multi-line signatures into a single line if they fit within the configured maximum line length (default: 120 characters).
-2.  **Packing** parameters for interface methods and struct function fields to use fewer lines if they don't fit in one line, while respecting the max line length.
+Стандартный форматтер `gofmt` обеспечивает базовое форматирование, но оставляет свободу выбора при разбивке длинных сигнатур функций на несколько строк. Это часто приводит к:
+1.  **Несогласованности**: В одном файле аргументы могут быть в одну строку, в другом — "лесенкой", в третьем — сгруппированы.
+2.  **Плохой читаемости**: Слишком длинные строки заставляют скроллить горизонтально.
+3.  **Диффам**: Хаотичные изменения форматирования загрязняют историю git.
 
-## Features
+`funcwrap` решает эти проблемы, навязывая строгие, но разумные правила:
+- **Компактность**: Если сигнатура влезает в одну строку (с учетом лимита), она *должна* быть в одну строку.
+- **Структурность**: Если сигнатура длинная, она должна быть отформатирована так, чтобы максимально эффективно использовать вертикальное пространство (особенно для интерфейсов).
 
-- ✅ Detects multi-line function signatures
-- ✅ Supports Go 1.18+ generics (type parameters)
-- ✅ Handles:
-    - Function declarations (`func Foo(...)`)
-    - Methods with receivers (`func (r *Receiver) Foo(...)`)
-    - Function literals / closures (`var f = func(...)`)
-    - Interface methods
-    - Struct fields of function type
-- ✅ Provides automatic fixes via SuggestedFixes
-- ✅ Configurable maximum line length
-- ✅ Smart formatting:
-    - **Standalone functions:** Only collapses if fits in one line. Preserves existing multi-line formatting if it doesn't fit.
-    - **Interfaces & Structs:** Aggressively packs parameters to optimize vertical space.
+## 🚀 Возможности
 
-## Installation
+Линтер анализирует следующие конструкции языка Go:
+- **Объявления функций** (`func Foo(...)`)
+- **Методы типов** (`func (s *S) Bar(...)`)
+- **Анонимные функции / Литералы** (`var f = func(...)`)
+- **Методы в интерфейсах** (`type I interface { Method(...) }`)
+- **Поля структур с типом функции** (`type S struct { Callback func(...) }`)
+- **Generics (Go 1.18+)**: Корректная обработка параметров типов `[T any]`.
 
-```bash
-go get github.com/golangci/example-plugin-module-linter
+### Алгоритм работы
+
+Линтер работает в два этапа:
+
+#### 1. Collapse (Схлопывание)
+Проверяет, можно ли записать всю сигнатуру (параметры + возвращаемые значения + receiver) в одну строку так, чтобы её длина не превышала `max-line-len`.
+
+**Пример:**
+```go
+// До (плохо, занимает 3 строки, хотя влезает в одну)
+func Sum(
+    a int, 
+    b int,
+) int { ... }
+
+// После (хорошо, компактно)
+func Sum(a int, b int) int { ... }
 ```
 
-## Configuration
+#### 2. Reformat / Packing (Умное переформатирование)
+Если сигнатура **не** влезает в одну строку, линтер применяет разные стратегии в зависимости от контекста:
 
-Add to your `.golangci.yml`:
+*   **Для обычных функций**:
+    Линтер действует консервативно. Если вы уже разбили аргументы по строкам, он старается не вмешиваться, чтобы не сломать авторскую группировку. Он вмешивается только если форматирование явно нарушает стиль (например, часть аргументов на одной строке, часть на другой без системы).
+
+*   **Для интерфейсов и полей структур**:
+    Линтер действует агрессивно (стратегия **Packing**). Он пытается разместить несколько коротких параметров на одной строке, чтобы определение интерфейса не растягивалось на 50 экранов.
+
+    **Пример (Интерфейс):**
+    ```go
+    // До (слишком разреженно)
+    type Logger interface {
+        Log(
+            level Level,
+            msg string,
+            args ...interface{},
+        )
+    }
+
+    // После (компактная упаковка)
+    type Logger interface {
+        Log(level Level, msg string, args ...interface{})
+    }
+    ```
+
+## ⚙️ Конфигурация
+
+Линтер настраивается через файл `.golangci.yml`.
+
+**Параметры:**
+*   `max-line-len` (int): Максимальная допустимая длина строки. По умолчанию: `120`.
+
+**Пример `.golangci.yml`:**
 
 ```yaml
 linters-settings:
   custom:
-    line-wrap:
-      type: module
-      description: Checks if multi-line function signatures can be collapsed to one line or formatted better
+    funcwrap:
+      path: .bin/linters/funcwrap.so
+      description: "Advanced function signature formatter"
+      original-url: github.com/username/funcwrap
       settings:
-        max-line-len: 120  # Optional, defaults to 120
+        max-line-len: 120
 ```
 
-## Examples
+## 🛠 Установка и Сборка
 
-### Collapsing (All types)
+Так как `funcwrap` — это плагин, его нужно скомпилировать той же версией Go, которой собран `golangci-lint`.
 
-**Before:**
-```go
-func ShortFunction(
-    a int,
-    b string,
-) error {
-    return nil
-}
-```
+1.  **Склонируйте репозиторий:**
+    ```bash
+    git clone https://github.com/username/funcwrap.git
+    cd funcwrap
+    ```
 
-**After (with auto-fix):**
-```go
-func ShortFunction(a int, b string) error {
-    return nil
-}
-```
+2.  **Соберите плагин:**
+    ```bash
+    go build -buildmode=plugin -o funcwrap.so linter.go
+    ```
 
-### Packing (Interface Methods & Struct Fields)
+3.  **Подключите в конфиг** (см. выше).
 
-**Before:**
-```go
-type MyInterface interface {
-    ProcessWithManyParameters(
-        p1 string,
-        p2 string,
-        p3 string,
-        p4 string,
-    ) error
-}
-```
+## 💡 Пример использования
 
-**After (with auto-fix, assuming max-len allows):**
-```go
-type MyInterface interface {
-    ProcessWithManyParameters(p1 string, p2 string, p3 string,
-        p4 string) error
-}
-```
+В директории [example/](example/) находится готовый пример проекта, настроенного для использования этого линтера как Go модуля.
 
-## Testing
+Чтобы запустить пример:
 
-```bash
-# Run all tests
-go test -v ./...
-```
+1.  Перейдите в директорию примера:
+    ```bash
+    cd example
+    ```
+2.  Соберите кастомную версию `golangci-lint`:
+    ```bash
+    golangci-lint custom
+    ```
+3.  Запустите линтер:
+    ```bash
+    ./custom-gcl run
+    ```
 
-## Development
+## 🧪 Разработка и Тестирование
 
-The project structure:
-- `linter.go`: Core logic.
-- `linter_test.go`: Tests runner.
-- `testdata/src/features/`: Test cases for language features (interfaces, structs, functions).
-- `testdata/src/limits/`: Test cases for different line length limits.
+Проект имеет обширный набор тестов, покрывающих граничные случаи и различные конструкции языка.
 
-See [CLAUDE.md](CLAUDE.md) or [GEMINI.md](GEMINI.md) for AI assistant guidance.
+*   **Запуск тестов:**
+    ```bash
+    go test -v ./...
+    ```
+
+*   **Структура тестов:**
+    *   `testdata/src/features/`: Тесты на фичи языка (дженерики, комменты, вариадики).
+    *   `testdata/src/limits/`: Тесты на разные ограничения длины строки (80, 100, 120, 160).
+
+## Детали реализации
+
+*   Основан на пакетах `go/ast` и `go/token`.
+*   Не требует тяжелой загрузки типов (`register.LoadModeSyntax`), что делает его очень быстрым.
+*   Использует собственный рендерер AST-узлов для точного контроля над пробелами и запятыми, в отличие от стандартного `go/printer`.
+
+---
+*См. также [GEMINI.md](GEMINI.md) и [CLAUDE.md](CLAUDE.md) для технического контекста.*
