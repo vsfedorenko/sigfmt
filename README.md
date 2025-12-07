@@ -211,6 +211,46 @@ type Logger interface {
   }
 ```
 
+### Complex Function Signatures
+```diff
+- func ProcessOrder(
+-     ctx context.Context,
+-     orderID string,
+-     items []Item,
+-     shippingAddress *Address,
+-     paymentMethod PaymentMethod,
+-     options ...Option,
+- ) (
+-     *Order,
+-     error,
+- ) {
++ func ProcessOrder(ctx context.Context, orderID string, items []Item, shippingAddress *Address, paymentMethod PaymentMethod, options ...Option) (*Order, error) {
+      // ...
+  }
+```
+
+### Grouping Parameters (Reformat)
+When parameters don't fit on one line, `sigfmt` groups them logically to save vertical space while maintaining readability.
+
+```diff
+  func ComplexCalculation(
+-     inputMatrix [][]float64,
+-     weights []float64,
+-     bias float64,
+-     activationFunc func(float64) float64,
+-     learningRate float64,
+-     epochs int,
+-     dropoutRate float64,
+  ) error {
++ func ComplexCalculation(
++     inputMatrix [][]float64, weights []float64, bias float64,
++     activationFunc func(float64) float64, learningRate float64,
++     epochs int, dropoutRate float64,
++ ) error {
+      // ...
+  }
+```
+
 ### Struct Fields
 ```diff
 type Component struct {

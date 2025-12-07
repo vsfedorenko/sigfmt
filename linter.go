@@ -238,6 +238,28 @@ func (p *PluginLineWrap) checkStruct(pass *analysis.Pass, structType *ast.Struct
 }
 
 // checkSignature is the core logic that determines if a signature needs formatting changes.
+// It evaluates the signature in two passes:
+//
+// 1. **Collapse Pass**: Checks if the entire signature (including parameters and results)
+//    can fit on a single line within the configured `MaxLineLen`.
+//    Example:
+//      func(a,
+//           b int) -> func(a, b int)
+//
+// 2. **Reformat Pass**: If it doesn't fit on one line, it checks if the multi-line
+//    formatting can be optimized (packed). This is especially useful for interfaces
+//    and structs where vertical space conservation is desired.
+//    Example:
+//      func(
+//          a int,
+//          b int,
+//          c int,
+//      )
+//      ->
+//      func(
+//          a, b int,
+//          c int,
+//      )
 //
 // Returns:
 //   - actionCollapse: if the signature should be collapsed to one line.
@@ -283,9 +305,18 @@ func (p *PluginLineWrap) visualLength(s string) int {
 
 // shouldReformat determines if a multi-line signature is eligible for reformatting (packing).
 //
-// Reformatting is suggested if:
-//   - It's an interface method or struct field (and packing is enabled).
-//   - It's a regular function where parameters are not cleanly split one-per-line.
+// It uses heuristics to avoid fighting with the user's intentional formatting:
+//
+// 1. **Aggressive Packing**: For `interface` methods and `struct` fields (if enabled),
+//    it almost always suggests packing. These are definitions, not logic, so compactness
+//    is usually preferred.
+//
+// 2. **Conservative Packing**: For regular function declarations, it respects the
+//    "staircase" style (one parameter per line). If the user has explicitly placed
+//    every parameter on a new line, `sigfmt` assumes this is intentional for readability
+//    (e.g., for diff clarity) and does not suggest changes. However, if the user has
+//    a "mixed" style (some on same line, some on new), `sigfmt` will step in to
+//    standardize it.
 func (p *PluginLineWrap) shouldReformat(fset *token.FileSet, sig *signatureInfo) bool {
 	if sig.funcType == nil || sig.funcType.Params == nil {
 		return false
@@ -380,6 +411,13 @@ func (p *PluginLineWrap) buildReformattedSignature(fset *token.FileSet, sig *sig
 
 // renderFieldListGrouped renders a list of fields (parameters), automatically grouping them
 // onto lines based on the MaxLineLen setting.
+//
+// Algorithm:
+// 1. Calculate available space on the current line (considering indentation).
+// 2. Iterate through parameters.
+// 3. For each parameter, check if adding it (plus separator) fits within MaxLineLen.
+// 4. If it fits, append to the current line.
+// 5. If it doesn't fit, flush the current line, start a new indented line, and add the parameter there.
 func (p *PluginLineWrap) renderFieldListGrouped(fset *token.FileSet, fl *ast.FieldList, sig *signatureInfo, openBracket, closeBracket string) string {
 	if fl == nil || len(fl.List) == 0 {
 		return openBracket + closeBracket
