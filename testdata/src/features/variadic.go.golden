@@ -1,0 +1,43 @@
+package features
+
+import "context"
+
+// Variadic function that can be collapsed.
+func SimpleVariadic(prefix string, values ...int) string { // want "Signature can be formatted more compactly"
+	return prefix
+}
+
+// Variadic with context.
+func VariadicWithContext(ctx context.Context, args ...string) error { // want "Signature can be formatted more compactly"
+	return nil
+}
+
+// Variadic with multiple parameters before variadic.
+func MultiParamVariadic(a int, b string, c bool, items ...interface{}) error { // want "Signature can be formatted more compactly"
+	return nil
+}
+
+// Variadic already on one line.
+func VariadicOneLine(prefix string, values ...int) string {
+	return prefix
+}
+
+// Long variadic that cannot fit on one line.
+func LongVariadicFunction(
+	veryLongParameterName string,
+	anotherVeryLongParameterName int,
+	yetAnotherLongParameter bool,
+	values ...interface{},
+) (string, error) {
+	return "", nil
+}
+
+// Variadic with generic type.
+func GenericVariadic[T any](items ...T) []T { // want "Signature can be formatted more compactly"
+	return items
+}
+
+// Variadic with empty interface.
+func EmptyInterfaceVariadic(args ...interface{}) interface{} { // want "Signature can be formatted more compactly"
+	return args
+}

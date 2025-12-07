@@ -97,6 +97,17 @@ func TestLineWrap_Settings(t *testing.T) {
 			},
 			pkg: "settings/pack_interfaces",
 		},
+		{
+			name: "ParamGroups",
+			settings: map[string]interface{}{
+				settingMaxLineLen: 50.0,
+				"param-groups": []interface{}{
+					[]interface{}{"context.Context", "*sql.Tx"},
+					[]interface{}{"context.Context"},
+				},
+			},
+			pkg: "settings/param_groups",
+		},
 	}
 
 	for _, tt := range tests {
@@ -139,8 +150,19 @@ func updateGoldenFiles(t *testing.T, a *analysis.Analyzer, dir string, pkgs ...s
 }
 
 // collectEditsFromResults groups all text edits by file path.
+// It initializes entries for all analyzed files to ensure golden files are created even with no edits.
 func collectEditsFromResults(results []*analysistest.Result) map[string][]fileEdit {
 	fileEdits := make(map[string][]fileEdit)
+
+	// Initialize all files with empty edits
+	for _, res := range results {
+		for _, file := range res.Pass.Files {
+			tokenFile := res.Pass.Fset.File(file.Pos())
+			if tokenFile != nil {
+				fileEdits[tokenFile.Name()] = []fileEdit{}
+			}
+		}
+	}
 
 	for _, res := range results {
 		for _, diag := range res.Diagnostics {

@@ -7,7 +7,7 @@ import "context"
 func ShortFunction(
 	a int,
 	b string,
-) error { // want "Multi-line signature can be collapsed to one line"
+) error { // want "Signature can be formatted more compactly"
 	return nil
 }
 
@@ -30,7 +30,7 @@ func VeryLongFunctionThatShouldNotBeCollapsed(
 func MultipleReturns(
 	x int,
 	y int,
-) (int, error) { // want "Multi-line signature can be collapsed to one line"
+) (int, error) { // want "Signature can be formatted more compactly"
 	return x + y, nil
 }
 
@@ -38,14 +38,14 @@ func MultipleReturns(
 func NamedReturns(
 	a int,
 	b int,
-) (sum int, err error) { // want "Multi-line signature can be collapsed to one line"
+) (sum int, err error) { // want "Signature can be formatted more compactly"
 	return a + b, nil
 }
 
 // Function with variadic parameters.
 func Sum(
 	nums ...int,
-) int { // want "Multi-line signature can be collapsed to one line"
+) int { // want "Signature can be formatted more compactly"
 	total := 0
 	for _, n := range nums {
 		total += n
@@ -61,7 +61,7 @@ func NoParams() error {
 // Function without return values.
 func NoReturn(
 	msg string,
-) { // want "Multi-line signature can be collapsed to one line"
+) { // want "Signature can be formatted more compactly"
 	println(msg)
 }
 
@@ -69,7 +69,7 @@ func NoReturn(
 func MixedParams(
 	a, b int,
 	c string,
-) error { // want "Multi-line signature can be collapsed to one line"
+) error { // want "Signature can be formatted more compactly"
 	return nil
 }
 
@@ -84,7 +84,7 @@ func Generic[
 	T any,
 ](
 	val T,
-) { // want "Multi-line signature can be collapsed to one line"
+) { // want "Signature can be formatted more compactly"
 }
 
 // Complex generics with multiple type parameters.
@@ -94,7 +94,7 @@ func Map[
 ](
 	items []T,
 	fn func(T) R,
-) []R { // want "Multi-line signature can be collapsed to one line"
+) []R { // want "Signature can be formatted more compactly"
 	result := make([]R, len(items))
 	for i, item := range items {
 		result[i] = fn(item)
@@ -111,7 +111,7 @@ type Calculator struct{}
 func (c *Calculator) Add(
 	a int,
 	b int,
-) int { // want "Multi-line signature can be collapsed to one line"
+) int { // want "Signature can be formatted more compactly"
 	return a + b
 }
 
@@ -124,7 +124,7 @@ func (c *Calculator) Multiply(x int, y int) int {
 var myFunc = func(
 	a int,
 	b int,
-) int { // want "Multi-line signature can be collapsed to one line"
+) int { // want "Signature can be formatted more compactly"
 	return a + b
 }
 

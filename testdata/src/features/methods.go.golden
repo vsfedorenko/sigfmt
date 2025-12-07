@@ -1,0 +1,55 @@
+package features
+
+import "context"
+
+type Service struct {
+	name string
+}
+
+// Method with value receiver that can be collapsed.
+func (s Service) ShortMethod(a int, b string) error { // want "Signature can be formatted more compactly"
+	return nil
+}
+
+// Method with pointer receiver that can be collapsed.
+func (s *Service) ShortPointerMethod(ctx context.Context) error { // want "Signature can be formatted more compactly"
+	return nil
+}
+
+// Method already on one line.
+func (s *Service) AlreadyOneLine(a int) error {
+	return nil
+}
+
+// Long method that should be reformatted.
+func (s *Service) LongMethod(paramOne string, paramTwo int, paramThree bool) error { // want "Signature can be formatted more compactly"
+	return nil
+}
+
+// Method with generic receiver.
+type GenericService[T any] struct {
+	data T
+}
+
+func (g *GenericService[T]) Process(ctx context.Context, item T) (T, error) { // want "Signature can be formatted more compactly"
+	return item, nil
+}
+
+// Method with multiple return values.
+func (s *Service) MultipleReturns(a int) (int, string, error) { // want "Signature can be formatted more compactly"
+	return a, "", nil
+}
+
+// Method with named returns.
+func (s *Service) NamedReturns(x int) (result int, err error) { // want "Signature can be formatted more compactly"
+	return x, nil
+}
+
+// Method that fits on one line with receiver.
+func (s *Service) VeryLongMethodThatCannotFit(
+	veryLongParameterNameOne string,
+	veryLongParameterNameTwo string,
+	veryLongParameterNameThree int,
+) error {
+	return nil
+}

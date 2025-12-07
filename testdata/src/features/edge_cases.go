@@ -1,0 +1,69 @@
+package features
+
+import "context"
+
+// Function with only one parameter.
+func SingleParam(
+	ctx context.Context,
+) error { // want "Signature can be formatted more compactly"
+	return nil
+}
+
+// Function with no parameters but multi-line.
+func NoParamsEdgeCase(
+) error { // want "Signature can be formatted more compactly"
+	return nil
+}
+
+// Function with complex nested types.
+func ComplexTypes(
+	m map[string][]int,
+	ch chan struct{},
+) error { // want "Signature can be formatted more compactly"
+	return nil
+}
+
+// Function with function type parameter.
+func FunctionParameter(
+	callback func(int) error,
+) error { // want "Signature can be formatted more compactly"
+	return nil
+}
+
+// Function with interface{} parameter.
+func InterfaceParameter(
+	data interface{},
+) error { // want "Signature can be formatted more compactly"
+	return nil
+}
+
+// Function with multiple interface types.
+func MultipleInterfaces(
+	a interface{},
+	b interface{},
+	c interface{},
+) error { // want "Signature can be formatted more compactly"
+	return nil
+}
+
+// Function with pointer to pointer.
+func PointerToPointer(
+	pp **int,
+) error { // want "Signature can be formatted more compactly"
+	return nil
+}
+
+// Function with slice of pointers.
+func SliceOfPointers(
+	items []*string,
+) error { // want "Signature can be formatted more compactly"
+	return nil
+}
+
+// Empty function.
+func EmptyFunction() {}
+
+// Function with only return type.
+func OnlyReturn() error {
+	return nil
+}

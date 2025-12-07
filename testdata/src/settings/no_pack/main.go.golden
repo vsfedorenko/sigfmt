@@ -27,7 +27,19 @@ type MyStruct struct {
 // Interface method packing
 type MyInterface interface {
 	// Should NOT be packed if PackInterfaceMethods is false
-	
+	Method1(
+		param1VeryLongName int,
+		param2VeryLongName int,
+		param3VeryLongName int,
+		param4VeryLongName int,
+		param5VeryLongName int,
+	)
 
-	
+	Method2(
+		param1VeryLongName int,
+		param2VeryLongName int,
+		param3VeryLongName int,
+		param4VeryLongName int,
+		param5VeryLongName int,
+	)
 }

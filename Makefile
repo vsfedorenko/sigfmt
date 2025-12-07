@@ -27,7 +27,7 @@ test-coverage: ## Run tests with coverage
 .PHONY: test-update-golden
 test-update-golden: ## Update golden files
 	@echo "Updating golden files..."
-	go test ./... -update
+	go test . -update
 	@echo "Golden files updated successfully!"
 
 .PHONY: test-clean

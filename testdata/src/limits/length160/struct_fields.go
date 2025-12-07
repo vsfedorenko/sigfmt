@@ -6,7 +6,7 @@ import "context"
 type Handler struct {
 	Process func(
 		ctx context.Context,
-	) error // want "Multi-line signature can be collapsed to one line"
+	) error // want "Signature can be formatted more compactly"
 }
 
 // Struct with multiple func fields.
@@ -14,30 +14,30 @@ type MultiHandler struct {
 	// Short field - should be collapsed
 	OnStart func(
 		id string,
-	) error // want "Multi-line signature can be collapsed to one line"
+	) error // want "Signature can be formatted more compactly"
 
 	// Field already on one line
 	OnStop func() error
 
 	// Long field - should remain split
-	OnProcessWithVeryLongNameAndManyParameters func(
+	ProcessWithVeryLongNameAndManyParameters func(
 		parameterOne string,
 		parameterTwo string,
 		parameterThree string,
 		parameterFour string,
-	) error // want "Multi-line signature can be collapsed to one line"
+	) error // want "Signature can be formatted more compactly"
 
 	// Field with multiple return values - should be collapsed
 	GetData func(
 		key string,
-	) (string, error) // want "Multi-line signature can be collapsed to one line"
+	) (string, error) // want "Signature can be formatted more compactly"
 }
 
 // Struct with func fields with generics.
 type GenericHandler[T any] struct {
 	Process func(
 		item T,
-	) error // want "Multi-line signature can be collapsed to one line"
+	) error // want "Signature can be formatted more compactly"
 
 	Transform func(item T) T
 }
@@ -49,7 +49,7 @@ type MixedStruct struct {
 
 	Validate func(
 		value string,
-	) bool // want "Multi-line signature can be collapsed to one line"
+	) bool // want "Signature can be formatted more compactly"
 
 	Transform func(input string) string
 }
@@ -58,14 +58,14 @@ type MixedStruct struct {
 type VariadicHandler struct {
 	Process func(
 		items ...string,
-	) error // want "Multi-line signature can be collapsed to one line"
+	) error // want "Signature can be formatted more compactly"
 }
 
 // Struct with func field having named return values.
 type NamedReturnsHandler struct {
 	Process func(
 		id string,
-	) (result string, err error) // want "Multi-line signature can be collapsed to one line"
+	) (result string, err error) // want "Signature can be formatted more compactly"
 }
 
 // Struct with func field with mixed parameters.
@@ -73,7 +73,7 @@ type MixedParamsHandler struct {
 	Process func(
 		a, b int,
 		c string,
-	) error // want "Multi-line signature can be collapsed to one line"
+	) error // want "Signature can be formatted more compactly"
 }
 
 // Complex case: struct declared inside a function,
@@ -84,7 +84,7 @@ func ComplexCase() {
 		Handler func(
 			ctx context.Context,
 			id string,
-		) error // want "Multi-line signature can be collapsed to one line"
+		) error // want "Signature can be formatted more compactly"
 
 		// This field is already on one line
 		Simple func() error
@@ -94,7 +94,7 @@ func ComplexCase() {
 			parameterWithVeryLongName string,
 			anotherParameterWithVeryLongName string,
 			yetAnotherParameterWithVeryLongName string,
-		) error // want "Multi-line signature can be collapsed to one line"
+		) error // want "Signature can be formatted more compactly"
 	}
 	_ = LocalStruct{}
 }
@@ -112,7 +112,7 @@ func NestedStructCase() {
 		// Field in main struct - should be collapsed
 		Transform func(
 			input string,
-		) string // want "Multi-line signature can be collapsed to one line"
+		) string // want "Signature can be formatted more compactly"
 	}
 
 	_ = Outer{}
@@ -135,14 +135,14 @@ var anonymousStruct = struct {
 type HigherOrderHandler struct {
 	GetHandler func(
 		config string,
-	) func(string) error // want "Multi-line signature can be collapsed to one line"
+	) func(string) error // want "Signature can be formatted more compactly"
 }
 
 // Struct with func field taking a function as parameter.
 type CallbackHandler struct {
 	Process func(
 		callback func(string) error,
-	) error // want "Multi-line signature can be collapsed to one line"
+	) error // want "Signature can be formatted more compactly"
 
 	ProcessMultiple func(callback func(string) error, fallback func() error) error
 }

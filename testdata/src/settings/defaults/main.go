@@ -7,7 +7,7 @@ type MyStruct struct {
 	Short func(
 		a int,
 		b int,
-	) error // want "Multi-line signature can be collapsed to one line"
+	) error // want "Signature can be formatted more compactly"
 
 	// This is long, should NOT collapse, but should PACK (reformat)
 	// assuming 120 chars limit.
@@ -21,5 +21,5 @@ type MyStruct struct {
 		param3VeryLongName int,
 		param4VeryLongName int,
 		param5VeryLongName int,
-	) error // want "Signature can be reformatted more compactly"
+	) error // want "Signature can be formatted more compactly"
 }

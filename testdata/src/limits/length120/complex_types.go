@@ -5,7 +5,7 @@ package length120
 // InlineStructShort checks inline struct that fits on one line.
 func InlineStructShort(
 	s struct{ X, Y int },
-) { // want "Multi-line signature can be collapsed to one line"
+) { // want "Signature can be formatted more compactly"
 }
 
 // InlineStructLong checks inline struct that does NOT fit on one line (due to names).
@@ -26,25 +26,25 @@ type MethodWithInlineStructsInterface interface {
 		p2 struct{ C, D string },
 		p3 struct{ E, F bool },
 		p4 struct{ G, H float64 },
-	) // want "Signature can be reformatted more compactly"
+	) // want "Signature can be formatted more compactly"
 }
 
 // NestedTypeShort checks nested types that fit on one line.
 func NestedTypeShort(
 	m map[string]func(int) []byte,
-) { // want "Multi-line signature can be collapsed to one line"
+) { // want "Signature can be formatted more compactly"
 }
 
 // FuncParamShort checks function as parameter.
 func FuncParamShort(
 	handler func(string) (int, error),
-) { // want "Multi-line signature can be collapsed to one line"
+) { // want "Signature can be formatted more compactly"
 }
 
 // VariadicComplex checks variadic parameter of complex type.
 func VariadicComplex(
 	items ...struct{ ID string },
-) { // want "Multi-line signature can be collapsed to one line"
+) { // want "Signature can be formatted more compactly"
 }
 
 // ComplexStructField checks func field with complex types.
@@ -54,5 +54,5 @@ type ComplexStructField struct {
 		b interface{ String() string },
 		c chan<- func(),
 		d ...*int,
-	) // want "Multi-line signature can be collapsed to one line"
+	) // want "Signature can be formatted more compactly"
 }

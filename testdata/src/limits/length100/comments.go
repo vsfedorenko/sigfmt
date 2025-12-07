@@ -8,16 +8,16 @@ package length100
 func FunctionWithComments(
 	a int, // parameter a
 	b int, // parameter b
-) { // want "Multi-line signature can be collapsed to one line"
+) { // want "Signature can be formatted more compactly"
 }
 
 // InterfaceWithComments checks interface with comments.
 // Since the linter works at the text replacement level, it will remove comments when collapsing.
-// In this case the signature is short, so the linter will suggest "Multi-line signature can be collapsed to one line".
+// In this case the signature is short, so the linter will suggest "Signature can be formatted more compactly".
 // And the fix will be applied (removing comments).
 type InterfaceWithComments interface {
 	Method(
 		a int, // comment for a
 		b int, // comment for b
-	) // want "Multi-line signature can be collapsed to one line"
+	) // want "Signature can be formatted more compactly"
 }

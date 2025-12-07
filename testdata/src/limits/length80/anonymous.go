@@ -6,7 +6,7 @@ package length80
 func BlankShort(
 	_ int,
 	_ string,
-) { // want "Multi-line signature can be collapsed to one line"
+) { // want "Signature can be formatted more compactly"
 }
 
 // MethodWithBlanksInterface checks blank identifiers in interface.
@@ -16,7 +16,7 @@ type MethodWithBlanksInterface interface {
 		_ string,
 		_ bool,
 		_ float64,
-	) // want "Multi-line signature can be collapsed to one line"
+	) // want "Signature can be formatted more compactly"
 }
 
 // OuterFunction checks nested anonymous functions.
@@ -25,7 +25,7 @@ func OuterFunction() {
 	callback := func(
 		a int,
 		b int,
-	) int { // want "Multi-line signature can be collapsed to one line"
+	) int { // want "Signature can be formatted more compactly"
 		return a + b
 	}
 	_ = callback

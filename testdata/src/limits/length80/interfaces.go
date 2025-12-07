@@ -6,7 +6,7 @@ import "context"
 type MyInterface interface {
 	Method(
 		ctx context.Context,
-	) error // want "Multi-line signature can be collapsed to one line"
+	) error // want "Signature can be formatted more compactly"
 
 	// Method already on one line
 	OneLineMethod()
@@ -17,7 +17,7 @@ type ComplexInterface interface {
 	// Short method - should be collapsed
 	Get(
 		id string,
-	) error // want "Multi-line signature can be collapsed to one line"
+	) error // want "Signature can be formatted more compactly"
 
 	// Long method - should remain split
 	ProcessWithVeryLongNameAndManyParameters(
@@ -25,7 +25,7 @@ type ComplexInterface interface {
 		parameterTwo string,
 		parameterThree string,
 		parameterFour string,
-	) error // want "Signature can be reformatted more compactly"
+	) error // want "Signature can be formatted more compactly"
 
 	// Method with context
 	ProcessWithContext(
@@ -34,7 +34,7 @@ type ComplexInterface interface {
 		parameterTwo string,
 		parameterThree string,
 		parameterFour string,
-	) error // want "Signature can be reformatted more compactly"
+	) error // want "Signature can be formatted more compactly"
 
 	// Very many parameters
 	ProcessManyParams(
@@ -46,24 +46,24 @@ type ComplexInterface interface {
 		parameterSix string,
 		parameterSeven string,
 		parameterEight string,
-	) error // want "Signature can be reformatted more compactly"
+	) error // want "Signature can be formatted more compactly"
 
 	// Method with multiple return values - should be collapsed
 	GetMultiple(
 		id string,
-	) (string, error) // want "Multi-line signature can be collapsed to one line"
+	) (string, error) // want "Signature can be formatted more compactly"
 
 	// Method with named return values - should be collapsed
 	GetNamed(
 		id string,
-	) (result string, err error) // want "Multi-line signature can be collapsed to one line"
+	) (result string, err error) // want "Signature can be formatted more compactly"
 }
 
 // Interface with generics.
 type GenericInterface[T any] interface {
 	Process(
 		item T,
-	) error // want "Multi-line signature can be collapsed to one line"
+	) error // want "Signature can be formatted more compactly"
 
 	GetAll() []T
 }
@@ -72,12 +72,12 @@ type GenericInterface[T any] interface {
 type MultiGenericInterface[K comparable, V any] interface {
 	Get(
 		key K,
-	) (V, bool) // want "Multi-line signature can be collapsed to one line"
+	) (V, bool) // want "Signature can be formatted more compactly"
 
 	Set(
 		key K,
 		value V,
-	) error // want "Multi-line signature can be collapsed to one line"
+	) error // want "Signature can be formatted more compactly"
 
 	Delete(key K)
 }
@@ -88,14 +88,14 @@ type VeryLongInterface interface {
 		parameterWithVeryLongName string,
 		anotherParameterWithVeryLongName string,
 		yetAnotherParameterWithVeryLongName string,
-	) error // want "Signature can be reformatted more compactly"
+	) error // want "Signature can be formatted more compactly"
 }
 
 // Interface with variadic parameters.
 type VariadicInterface interface {
 	Process(
 		items ...string,
-	) error // want "Multi-line signature can be collapsed to one line"
+	) error // want "Signature can be formatted more compactly"
 }
 
 // Interface with functional types in parameters.
@@ -103,9 +103,9 @@ type HandlerInterface interface {
 	Handle(
 		ctx context.Context,
 		handler func(string) error,
-	) error // want "Multi-line signature can be collapsed to one line"
+	) error // want "Signature can be formatted more compactly"
 
-	HandleMultiple(ctx context.Context, handlers ...func(string) error) error
+	HandleMultiple(ctx context.Context, handlers ...func(string) error) error // want "Signature can be formatted more compactly"
 }
 
 // Empty interface.
@@ -116,5 +116,5 @@ type MixedInterface interface {
 	Process(
 		a, b int,
 		c string,
-	) error // want "Multi-line signature can be collapsed to one line"
+	) error // want "Signature can be formatted more compactly"
 }

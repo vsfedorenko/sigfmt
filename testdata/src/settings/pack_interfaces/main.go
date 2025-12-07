@@ -19,5 +19,5 @@ type MyInterface interface {
 		param3VeryLongName int,
 		param4VeryLongName int,
 		param5VeryLongName int,
-	) error // want "Signature can be reformatted more compactly"
+	) error // want "Signature can be formatted more compactly"
 }

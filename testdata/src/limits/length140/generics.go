@@ -5,7 +5,7 @@ package length140
 // GenericFunction checks a simple function with generics.
 func GenericFunction[T any](
 	v T,
-) T { // want "Multi-line signature can be collapsed to one line"
+) T { // want "Signature can be formatted more compactly"
 	return v
 }
 
@@ -19,7 +19,7 @@ type LongConstraintsInterface[T interface {
 		p2 T,
 		p3 T,
 		p4 T,
-	) // want "Multi-line signature can be collapsed to one line"
+	) // want "Signature can be formatted more compactly"
 }
 
 // MethodWithComplexGenericsInterface checks interface method with complex generics.
@@ -29,7 +29,7 @@ type MethodWithComplexGenericsInterface[T interface{ int | string | ~bool }, R i
 		b R,
 		c T,
 		d R,
-	) // want "Multi-line signature can be collapsed to one line"
+	) // want "Signature can be formatted more compactly"
 }
 
 // --- Receiver with Generics ---
@@ -42,6 +42,6 @@ type Container[T any] struct {
 // Should be collapsed if it fits.
 func (c *Container[T]) GetVal(
 	ctx interface{},
-) T { // want "Multi-line signature can be collapsed to one line"
+) T { // want "Signature can be formatted more compactly"
 	return c.val
 }

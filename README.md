@@ -92,6 +92,7 @@ Configure the linter in your `.golangci.yml` file.
 *   `tab-width` (int): Tab width for visual calculation. Default: `8`.
 *   `pack-struct-fields` (bool): Enable packing of struct fields. Default: `true`.
 *   `pack-interface-methods` (bool): Enable packing of interface methods. Default: `true`.
+*   `param-groups` (list of lists): Define groups of parameter types that should be kept together on the same line.
 
 **Example `.golangci.yml`:**
 
@@ -106,6 +107,9 @@ linters-settings:
         tab-width: 8
         pack-struct-fields: true
         pack-interface-methods: true
+        param-groups:
+          - ["context.Context", "*sql.Tx"] # Group ctx and tx together
+          - ["context.Context"]            # Ensure ctx is on its own line (if no tx)
 ```
 
 ## 💡 Usage
