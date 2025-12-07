@@ -1,21 +1,21 @@
-# funcwrap — Linter for Go Function Signatures
+# sigfmt — Linter for Go Function Signatures
 
 [![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.18-blue)](https://golang.org/dl/)
 
-`funcwrap` — это мощный плагин-линтер для `golangci-lint`, предназначенный для автоматической проверки и форматирования сигнатур функций, методов и полевых функций в Go.
+`sigfmt` is a powerful linter plugin for `golangci-lint` designed for automatic checking and formatting of function, method, and field function signatures in Go.
 
-## 🎯 Мотивация
+## 🎯 Motivation
 
-### Проблема
+### The Problem
 
-Стандартный форматтер `gofmt` обеспечивает базовое форматирование, но оставляет свободу выбора при разбивке длинных сигнатур функций на несколько строк. Это часто приводит к:
+The standard `gofmt` formatter provides basic formatting but leaves freedom of choice when breaking long function signatures across multiple lines. This often leads to:
 
-1.  **Несогласованности в кодовой базе**
+1.  **Inconsistency in the codebase**
     ```go
-    // Файл A: всё в одну строку
+    // File A: all on one line
     func ProcessUser(id int, name string, email string, age int) error { ... }
 
-    // Файл B: "лесенка"
+    // File B: "staircase" style
     func ProcessOrder(
         id int,
         userId int,
@@ -23,21 +23,21 @@
         status string,
     ) error { ... }
 
-    // Файл C: хаотичная группировка
+    // File C: chaotic grouping
     func CreateAccount(id int, name string,
         email string, password string) error { ... }
     ```
 
-2.  **Плохой читаемости**: Слишком длинные строки заставляют скроллить горизонтально, особенно при code review.
+2.  **Poor readability**: Lines that are too long force horizontal scrolling, especially during code review.
 
-3.  **Загрязнению git-истории**: Когда разные разработчики по-разному форматируют код, возникают ненужные изменения в diff:
+3.  **Polluted git history**: When different developers format code differently, unnecessary changes appear in diffs:
     ```diff
     - func Save(data []byte,
     -     path string) error {
     + func Save(data []byte, path string) error {
     ```
 
-4.  **Раздутым интерфейсам**: Без упаковки параметров интерфейсы занимают слишком много места:
+4.  **Bloated interfaces**: Without parameter packing, interfaces take up too much space:
     ```go
     type UserService interface {
         Create(
@@ -55,58 +55,58 @@
             id int,
         ) error
     }
-    // 16 строк для трёх простых методов!
+    // 16 lines for three simple methods!
     ```
 
-### Решение
+### The Solution
 
-`funcwrap` решает эти проблемы, навязывая строгие, но разумные правила:
-- **Компактность**: Если сигнатура влезает в одну строку (с учетом лимита), она *должна* быть в одну строку.
-- **Структурность**: Если сигнатура длинная, она должна быть отформатирована так, чтобы максимально эффективно использовать вертикальное пространство (особенно для интерфейсов).
-- **Автоматизация**: Линтер не только указывает на проблемы, но и предлагает автоматические фиксы.
-- **Настраиваемость**: Гибкие настройки для разных стилей кода и ограничений длины строки.
+`sigfmt` solves these problems by enforcing strict but reasonable rules:
+- **Compactness**: If a signature fits on one line (considering the limit), it *must* be on one line.
+- **Structure**: If a signature is long, it should be formatted to use vertical space most efficiently (especially for interfaces).
+- **Automation**: The linter not only points out problems but also suggests automatic fixes.
+- **Configurability**: Flexible settings for different code styles and line length limits.
 
-## 🚀 Возможности
+## 🚀 Features
 
-Линтер анализирует следующие конструкции языка Go:
-- **Объявления функций** (`func Foo(...)`)
-- **Методы типов** (`func (s *S) Bar(...)`)
-- **Анонимные функции / Литералы** (`var f = func(...)`)
-- **Методы в интерфейсах** (`type I interface { Method(...) }`)
-- **Поля структур с типом функции** (`type S struct { Callback func(...) }`)
-- **Generics (Go 1.18+)**: Корректная обработка параметров типов `[T any]`.
+The linter analyzes the following Go language constructs:
+- **Function declarations** (`func Foo(...)`)
+- **Type methods** (`func (s *S) Bar(...)`)
+- **Anonymous functions / Literals** (`var f = func(...)`)
+- **Methods in interfaces** (`type I interface { Method(...) }`)
+- **Struct fields with function type** (`type S struct { Callback func(...) }`)
+- **Generics (Go 1.18+)**: Correct handling of type parameters `[T any]`.
 
-### Алгоритм работы
+### How It Works
 
-Линтер работает в два этапа:
+The linter operates in two stages:
 
-#### 1. Collapse (Схлопывание)
-Проверяет, можно ли записать всю сигнатуру (параметры + возвращаемые значения + receiver) в одну строку так, чтобы её длина не превышала `max-line-len`.
+#### 1. Collapse
+Checks if the entire signature (parameters + return values + receiver) can be written on one line so that its length doesn't exceed `max-line-len`.
 
-**Пример:**
+**Example:**
 ```go
-// До (плохо, занимает 3 строки, хотя влезает в одну)
+// Before (bad, takes 3 lines, but fits on one)
 func Sum(
-    a int, 
+    a int,
     b int,
 ) int { ... }
 
-// После (хорошо, компактно)
+// After (good, compact)
 func Sum(a int, b int) int { ... }
 ```
 
-#### 2. Reformat / Packing (Умное переформатирование)
-Если сигнатура **не** влезает в одну строку, линтер применяет разные стратегии в зависимости от контекста:
+#### 2. Reformat / Packing (Smart Reformatting)
+If a signature **doesn't** fit on one line, the linter applies different strategies depending on context:
 
-*   **Для обычных функций**:
-    Линтер действует консервативно. Если вы уже разбили аргументы по строкам, он старается не вмешиваться, чтобы не сломать авторскую группировку. Он вмешивается только если форматирование явно нарушает стиль (например, часть аргументов на одной строке, часть на другой без системы).
+*   **For regular functions**:
+    The linter acts conservatively. If you've already split arguments by lines, it tries not to interfere to avoid breaking author grouping. It only intervenes if formatting clearly violates style (e.g., some arguments on one line, some on another without system).
 
-*   **Для интерфейсов и полей структур**:
-    Линтер действует агрессивно (стратегия **Packing**). Он пытается разместить несколько коротких параметров на одной строке, чтобы определение интерфейса не растягивалось на 50 экранов.
+*   **For interfaces and struct fields**:
+    The linter acts aggressively (**Packing** strategy). It tries to place several short parameters on one line so interface definition doesn't stretch for 50 screens.
 
-    **Пример (Интерфейс):**
+    **Example (Interface):**
     ```go
-    // До (слишком разреженно)
+    // Before (too sparse)
     type Logger interface {
         Log(
             level Level,
@@ -115,31 +115,31 @@ func Sum(a int, b int) int { ... }
         )
     }
 
-    // После (компактная упаковка)
+    // After (compact packing)
     type Logger interface {
         Log(level Level, msg string, args ...interface{})
     }
     ```
 
-## ⚙️ Конфигурация
+## ⚙️ Configuration
 
-Линтер настраивается через файл `.golangci.yml`.
+The linter is configured through the `.golangci.yml` file.
 
-**Параметры:**
-*   `max-line-len` (int): Максимальная допустимая длина строки. По умолчанию: `120`.
-*   `tab-width` (int): Ширина табуляции для расчета визуальной длины строки. По умолчанию: `8`.
-*   `pack-struct-fields` (bool): Включить упаковку полей структур с типом func. По умолчанию: `true`.
-*   `pack-interface-methods` (bool): Включить упаковку методов интерфейсов. По умолчанию: `true`.
+**Parameters:**
+*   `max-line-len` (int): Maximum allowed line length. Default: `120`.
+*   `tab-width` (int): Tab width for calculating visual line length. Default: `8`.
+*   `pack-struct-fields` (bool): Enable packing of struct fields with func type. Default: `true`.
+*   `pack-interface-methods` (bool): Enable packing of interface methods. Default: `true`.
 
-**Пример `.golangci.yml`:**
+**Example `.golangci.yml`:**
 
 ```yaml
 linters-settings:
   custom:
-    funcwrap:
-      path: .bin/linters/funcwrap.so
+    sigfmt:
+      path: .bin/linters/sigfmt.so
       description: "Advanced function signature formatter"
-      original-url: github.com/username/funcwrap
+      original-url: github.com/username/sigfmt
       settings:
         max-line-len: 120
         tab-width: 8
@@ -147,108 +147,108 @@ linters-settings:
         pack-interface-methods: true
 ```
 
-## 🛠 Установка и Сборка
+## 🛠 Installation and Building
 
-Так как `funcwrap` — это плагин, его нужно скомпилировать той же версией Go, которой собран `golangci-lint`.
+Since `sigfmt` is a plugin, it needs to be compiled with the same Go version used to build `golangci-lint`.
 
-1.  **Склонируйте репозиторий:**
+1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/username/funcwrap.git
-    cd funcwrap
+    git clone https://github.com/username/sigfmt.git
+    cd sigfmt
     ```
 
-2.  **Соберите плагин:**
+2.  **Build the plugin:**
     ```bash
-    go build -buildmode=plugin -o funcwrap.so linter.go
+    go build -buildmode=plugin -o sigfmt.so linter.go
     ```
 
-3.  **Подключите в конфиг** (см. выше).
+3.  **Connect in config** (see above).
 
-## 💡 Пример использования
+## 💡 Usage Example
 
-В директории [example/](example/) находится готовый пример проекта, настроенного для использования этого линтера как Go модуля.
+The [example/](example/) directory contains a ready-to-use project example configured to use this linter as a Go module.
 
-Чтобы запустить пример:
+To run the example:
 
-1.  Перейдите в директорию примера:
+1.  Navigate to the example directory:
     ```bash
     cd example
     ```
-2.  Соберите кастомную версию `golangci-lint`:
+2.  Build a custom version of `golangci-lint`:
     ```bash
     golangci-lint custom
     ```
-3.  Запустите линтер:
+3.  Run the linter:
     ```bash
     ./custom-gcl run
     ```
 
-## 🧪 Разработка и Тестирование
+## 🧪 Development and Testing
 
-Проект имеет обширный набор тестов, покрывающих граничные случаи и различные конструкции языка.
+The project has an extensive test suite covering edge cases and various language constructs.
 
-### Использование Makefile
+### Using Makefile
 
-Проект включает `Makefile` для удобства разработки:
+The project includes a `Makefile` for development convenience:
 
 ```bash
-# Показать все доступные команды
+# Show all available commands
 make help
 
-# Запустить тесты
+# Run tests
 make test
 
-# Запустить тесты с race detector
+# Run tests with race detector
 make test-race
 
-# Запустить тесты с покрытием
+# Run tests with coverage
 make test-coverage
 
-# Обновить golden файлы
+# Update golden files
 make test-update-golden
 
-# Форматировать код
+# Format code
 make fmt
 
-# Запустить линтер
+# Run linter
 make lint
 
-# Запустить все проверки (fmt, vet, lint, test)
+# Run all checks (fmt, vet, lint, test)
 make check
 
-# Собрать кастомный golangci-lint binary
+# Build custom golangci-lint binary
 make build-example
 
-# Запустить кастомный линтер на примере
+# Run custom linter on example
 make run-example
 
-# Очистить артефакты сборки
+# Clean build artifacts
 make clean
 ```
 
-### Структура тестов
+### Test Structure
 
-*   `testdata/src/features/`: Тесты на фичи языка (дженерики, комменты, вариадики).
-*   `testdata/src/limits/`: Тесты на разные ограничения длины строки (80, 100, 120, 140, 160).
-*   `testdata/src/settings/`: Тесты на различные настройки линтера.
+*   `testdata/src/features/`: Tests for language features (generics, comments, variadics).
+*   `testdata/src/limits/`: Tests for different line length limits (80, 100, 120, 140, 160).
+*   `testdata/src/settings/`: Tests for various linter settings.
 
-### Обновление Golden файлов
+### Updating Golden Files
 
-Golden файлы содержат ожидаемые результаты применения фиксов. Для их обновления используйте:
+Golden files contain expected results of applying fixes. To update them, use:
 
 ```bash
-# Через Makefile (рекомендуется)
+# Via Makefile (recommended)
 make test-update-golden
 
-# Напрямую через GODEBUG
+# Directly via GODEBUG
 GODEBUG=analysistest.fix=true go test ./...
 ```
 
-## 📊 Реальные примеры использования
+## 📊 Real-World Usage Examples
 
-### Пример 1: API обработчики
+### Example 1: API Handlers
 
-**До:**
+**Before:**
 ```go
 func CreateUser(
     w http.ResponseWriter,
@@ -263,7 +263,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request, id string,
 }
 ```
 
-**После:**
+**After:**
 ```go
 func CreateUser(w http.ResponseWriter, r *http.Request) {
     // ...
@@ -274,9 +274,9 @@ func UpdateUser(w http.ResponseWriter, r *http.Request, id string, name string, 
 }
 ```
 
-### Пример 2: Интерфейсы сервисов
+### Example 2: Service Interfaces
 
-**До (121 строка для 8 методов):**
+**Before (121 lines for 8 methods):**
 ```go
 type UserRepository interface {
     Create(
@@ -296,23 +296,23 @@ type UserRepository interface {
         ctx context.Context,
         id int,
     ) error
-    // ... ещё 5 методов
+    // ... 5 more methods
 }
 ```
 
-**После (45 строк для тех же 8 методов - экономия 63%):**
+**After (45 lines for the same 8 methods - 63% savings):**
 ```go
 type UserRepository interface {
     Create(ctx context.Context, name string, email string) (*User, error)
     Update(ctx context.Context, id int, name string, email string) error
     Delete(ctx context.Context, id int) error
-    // ... ещё 5 методов
+    // ... 5 more methods
 }
 ```
 
-### Пример 3: Generics (Go 1.18+)
+### Example 3: Generics (Go 1.18+)
 
-**До:**
+**Before:**
 ```go
 func Map[T any, R any](
     slice []T,
@@ -322,96 +322,96 @@ func Map[T any, R any](
 }
 ```
 
-**После:**
+**After:**
 ```go
 func Map[T any, R any](slice []T, fn func(T) R) []R {
     // ...
 }
 ```
 
-## ⚡ Производительность
+## ⚡ Performance
 
-- **Быстрая работа**: Не требует загрузки информации о типах (`register.LoadModeSyntax`)
-- **Минимальное потребление памяти**: Работает только с AST и токенами
-- **Параллельная обработка**: Может анализировать несколько файлов одновременно через `golangci-lint`
+- **Fast execution**: Doesn't require loading type information (`register.LoadModeSyntax`)
+- **Minimal memory consumption**: Works only with AST and tokens
+- **Parallel processing**: Can analyze multiple files simultaneously via `golangci-lint`
 
-На средней кодовой базе (10k LOC):
-- Время анализа: ~100-200ms
-- Память: ~20-30MB
+On a medium codebase (10k LOC):
+- Analysis time: ~100-200ms
+- Memory: ~20-30MB
 
 ## 🤔 FAQ
 
-### Почему не использовать `gofmt` или `gofumpt`?
+### Why not use `gofmt` or `gofumpt`?
 
-`gofmt` и `gofumpt` великолепны для базового форматирования, но они не применяют строгих правил к длине строк и упаковке параметров. `funcwrap` дополняет их, обеспечивая дополнительный уровень согласованности.
+`gofmt` and `gofumpt` are great for basic formatting, but they don't enforce strict rules on line length and parameter packing. `sigfmt` complements them by providing an additional level of consistency.
 
-### Можно ли отключить упаковку параметров?
+### Can parameter packing be disabled?
 
-Да! Используйте настройки `pack-struct-fields: false` и `pack-interface-methods: false` для отключения агрессивной упаковки параметров.
+Yes! Use the `pack-struct-fields: false` and `pack-interface-methods: false` settings to disable aggressive parameter packing.
 
-### Работает ли с Go 1.18+ Generics?
+### Does it work with Go 1.18+ Generics?
 
-Да, `funcwrap` полностью поддерживает дженерики, включая параметры типов в квадратных скобках.
+Yes, `sigfmt` fully supports generics, including type parameters in square brackets.
 
-### Как обработать особые случаи?
+### How to handle special cases?
 
-Используйте комментарий `//nolint:funcwrap` для отключения линтера на конкретной функции:
+Use the `//nolint:sigfmt` comment to disable the linter for a specific function:
 
 ```go
-//nolint:funcwrap
+//nolint:sigfmt
 func SpecialCase(
     a int,
     b string,
 ) {
-    // Линтер пропустит эту функцию
+    // Linter will skip this function
 }
 ```
 
-### Поддерживается ли автоматическое исправление?
+### Is automatic fixing supported?
 
-Да! Линтер предоставляет suggested fixes, которые можно применить через:
+Yes! The linter provides suggested fixes that can be applied via:
 ```bash
 golangci-lint run --fix
 ```
 
-## 🛡️ Детали реализации
+## 🛡️ Implementation Details
 
-*   **Основан на `go/ast` и `go/token`**: Надёжный парсинг через стандартные библиотеки Go
-*   **Быстрая работа**: Не требует тяжелой загрузки типов (`register.LoadModeSyntax`)
-*   **Точный контроль**: Использует собственный рендерер AST-узлов для точного контроля над пробелами и запятыми, в отличие от стандартного `go/printer`
-*   **Поддержка Generics**: Корректная обработка параметров типов `[T any]` (Go 1.18+)
-*   **Тестовое покрытие**: Более 100 тестовых кейсов, включая граничные случаи
+*   **Based on `go/ast` and `go/token`**: Reliable parsing via standard Go libraries
+*   **Fast execution**: Doesn't require heavy type loading (`register.LoadModeSyntax`)
+*   **Precise control**: Uses custom AST node renderer for precise control over spaces and commas, unlike standard `go/printer`
+*   **Generics support**: Correct handling of type parameters `[T any]` (Go 1.18+)
+*   **Test coverage**: Over 100 test cases, including edge cases
 
-## 🤝 Участие в разработке
+## 🤝 Contributing
 
-Мы приветствуем вклад в проект! Пожалуйста:
+We welcome contributions to the project! Please:
 
-1. Форкните репозиторий
-2. Создайте feature branch (`git checkout -b feature/amazing-feature`)
-3. Убедитесь, что тесты проходят (`make test`)
-4. Закоммитьте изменения (`git commit -m 'Add amazing feature'`)
-5. Запушьте в ветку (`git push origin feature/amazing-feature`)
-6. Откройте Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make sure tests pass (`make test`)
+4. Commit changes (`git commit -m 'Add amazing feature'`)
+5. Push to branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
 
-### Требования для PR:
-- ✅ Все тесты проходят (`make test`)
-- ✅ Код отформатирован (`make fmt`)
-- ✅ Линтеры не выдают ошибок (`make lint`)
-- ✅ Добавлены тесты для новой функциональности
-- ✅ Обновлена документация (если необходимо)
+### PR Requirements:
+- ✅ All tests pass (`make test`)
+- ✅ Code is formatted (`make fmt`)
+- ✅ Linters pass without errors (`make lint`)
+- ✅ Tests added for new functionality
+- ✅ Documentation updated (if necessary)
 
 ## 📝 License
 
 MIT License
 
-## 🔗 Полезные ссылки
+## 🔗 Useful Links
 
-- [golangci-lint документация](https://golangci-lint.run/)
-- [Go AST пакет](https://pkg.go.dev/go/ast)
-- [Разработка пользовательских линтеров](https://golangci-lint.run/contributing/new-linters/)
+- [golangci-lint documentation](https://golangci-lint.run/)
+- [Go AST package](https://pkg.go.dev/go/ast)
+- [Developing custom linters](https://golangci-lint.run/contributing/new-linters/)
 
 ---
 
-**Техническая документация для AI-ассистентов:**
-- [CLAUDE.md](CLAUDE.md) — контекст для Claude AI
-- [GEMINI.md](GEMINI.md) — контекст для Gemini AI
+**Technical documentation for AI assistants:**
+- [CLAUDE.md](CLAUDE.md) — context for Claude AI
+- [GEMINI.md](GEMINI.md) — context for Gemini AI

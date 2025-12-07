@@ -4,7 +4,7 @@ This file contains context and guidelines for AI assistants (Claude, Gemini, etc
 
 ## Project Overview
 
-**Name:** `funcwrap`
+**Name:** `sigfmt`
 **Type:** Custom linter plugin for `golangci-lint`
 **Language:** Go (requires Go 1.18+ for generics support)
 **Main Goal:** Automatic checking and formatting of function signatures in Go code
@@ -99,7 +99,7 @@ type Logger interface {
 const (
     defaultMaxLineLen         = 120
     defaultTabWidth           = 8
-    analyzerName              = "funcwrap"
+    analyzerName              = "sigfmt"
     diagnosticMessage         = "Multi-line signature can be collapsed to one line"
     diagnosticMessageReformat = "Signature can be reformatted more compactly"
     fixMessage                = "Collapse to one line"
@@ -127,8 +127,8 @@ Settings are passed as a map to the `New` method. All settings have sensible def
 ```yaml
 linters-settings:
   custom:
-    funcwrap:
-      path: .bin/linters/funcwrap.so
+    sigfmt:
+      path: .bin/linters/sigfmt.so
       description: "Advanced function signature formatter"
       settings:
         max-line-len: 120        # Maximum line length

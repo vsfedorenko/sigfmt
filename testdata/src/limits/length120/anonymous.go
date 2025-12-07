@@ -2,13 +2,13 @@ package length120
 
 // --- Anonymous Functions & Identifiers ---
 
-// BlankShort проверяет пустые идентификаторы.
+// BlankShort checks blank identifiers.
 func BlankShort(
 	_ int,
 	_ string,
 ) {} // want "Multi-line signature can be collapsed to one line"
 
-// MethodWithBlanksInterface проверяет пустые идентификаторы в интерфейсе.
+// MethodWithBlanksInterface checks blank identifiers in interface.
 type MethodWithBlanksInterface interface {
 	MethodWithBlanks(
 		_ int,
@@ -18,9 +18,9 @@ type MethodWithBlanksInterface interface {
 	) // want "Multi-line signature can be collapsed to one line"
 }
 
-// OuterFunction проверяет вложенные анонимные функции.
+// OuterFunction checks nested anonymous functions.
 func OuterFunction() {
-	// Анонимная функция внутри.
+	// Anonymous function inside.
 	callback := func(
 		a int,
 		b int,

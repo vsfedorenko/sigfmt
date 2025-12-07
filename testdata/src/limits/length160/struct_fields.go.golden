@@ -2,34 +2,34 @@ package length160
 
 import "context"
 
-// Простая структура с полем типа func, которое должно схлопнуться.
+// Simple struct with a func field that should be collapsed.
 type Handler struct {
 	Process func(ctx context.Context) error // want "Multi-line signature can be collapsed to one line"
 }
 
-// Структура с несколькими полями типа func.
+// Struct with multiple func fields.
 type MultiHandler struct {
-	// Короткое поле - должно схлопнуться
+	// Short field - should be collapsed
 	OnStart func(id string) error // want "Multi-line signature can be collapsed to one line"
 
-	// Поле уже в одну строку
+	// Field already on one line
 	OnStop func() error
 
-	// Длинное поле - должно остаться разбитым
+	// Long field - should remain split
 	OnProcessWithVeryLongNameAndManyParameters func(parameterOne string, parameterTwo string, parameterThree string, parameterFour string) error // want "Multi-line signature can be collapsed to one line"
 
-	// Поле с несколькими возвращаемыми значениями - должно схлопнуться
+	// Field with multiple return values - should be collapsed
 	GetData func(key string) (string, error) // want "Multi-line signature can be collapsed to one line"
 }
 
-// Структура с полями типа func с дженериками.
+// Struct with func fields with generics.
 type GenericHandler[T any] struct {
 	Process func(item T) error // want "Multi-line signature can be collapsed to one line"
 
 	Transform func(item T) T
 }
 
-// Структура с обычными полями и полями типа func.
+// Struct with regular fields and func fields.
 type MixedStruct struct {
 	Name string
 	Age  int
@@ -39,56 +39,56 @@ type MixedStruct struct {
 	Transform func(input string) string
 }
 
-// Структура с вариадическими параметрами в поле типа func.
+// Struct with variadic parameters in func field.
 type VariadicHandler struct {
 	Process func(items ...string) error // want "Multi-line signature can be collapsed to one line"
 }
 
-// Структура с полем типа func, имеющим именованные возвращаемые значения.
+// Struct with func field having named return values.
 type NamedReturnsHandler struct {
 	Process func(id string) (result string, err error) // want "Multi-line signature can be collapsed to one line"
 }
 
-// Структура с полем типа func с mixed параметрами.
+// Struct with func field with mixed parameters.
 type MixedParamsHandler struct {
 	Process func(a, b int, c string) error // want "Multi-line signature can be collapsed to one line"
 }
 
-// Сложный кейс: структура объявлена внутри функции,
-// а внутри структуры поле с многострочной функцией.
+// Complex case: struct declared inside a function,
+// and inside the struct a field with multi-line function.
 func ComplexCase() {
 	type LocalStruct struct {
-		// Это поле должно схлопнуться
+		// This field should be collapsed
 		Handler func(ctx context.Context, id string) error // want "Multi-line signature can be collapsed to one line"
 
-		// Это поле уже в одну строку
+		// This field is already on one line
 		Simple func() error
 
-		// Это длинное поле должно остаться разбитым
+		// This long field should remain split
 		VeryLongHandler func(parameterWithVeryLongName string, anotherParameterWithVeryLongName string, yetAnotherParameterWithVeryLongName string) error // want "Multi-line signature can be collapsed to one line"
 	}
 	_ = LocalStruct{}
 }
 
-// Еще один сложный кейс: вложенные структуры.
+// Another complex case: nested structs.
 func NestedStructCase() {
 	type Outer struct {
 		Inner struct {
-			// Поле во вложенной структуре (анонимная структура не поддерживается линтером)
+			// Field in nested struct (anonymous struct not supported by linter)
 			Process func(
 				data string,
 			) error
 		}
 
-		// Поле в основной структуре - должно схлопнуться
+		// Field in main struct - should be collapsed
 		Transform func(input string) string // want "Multi-line signature can be collapsed to one line"
 	}
 
 	_ = Outer{}
 }
 
-// Анонимная структура в переменной с полем типа func.
-// (анонимные структуры не поддерживаются линтером)
+// Anonymous struct in variable with func field.
+// (anonymous structs not supported by linter)
 var anonymousStruct = struct {
 	Handler func(
 		id string,
@@ -100,12 +100,12 @@ var anonymousStruct = struct {
 	Simple:  func() error { return nil },
 }
 
-// Структура с полем типа func, возвращающим функцию.
+// Struct with func field returning a function.
 type HigherOrderHandler struct {
 	GetHandler func(config string) func(string) error // want "Multi-line signature can be collapsed to one line"
 }
 
-// Структура с полем типа func, принимающим функцию в параметрах.
+// Struct with func field taking a function as parameter.
 type CallbackHandler struct {
 	Process func(callback func(string) error) error // want "Multi-line signature can be collapsed to one line"
 

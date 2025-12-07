@@ -2,13 +2,13 @@ package length100
 
 // --- Inline Structs & Complex Types ---
 
-// InlineStructShort проверяет встроенную структуру, которая влезает в одну строку.
+// InlineStructShort checks inline struct that fits on one line.
 func InlineStructShort(
 	s struct{ X, Y int },
 ) {} // want "Multi-line signature can be collapsed to one line"
 
-// InlineStructLong проверяет встроенную структуру, которая НЕ влезает в одну строку (из-за имен).
-// Должна остаться без изменений (multiline), так как это обычная функция.
+// InlineStructLong checks inline struct that does NOT fit on one line (due to names).
+// Should remain unchanged (multiline), since this is a regular function.
 func InlineStructLong(
 	param1 struct{ Field1, Field2, Field3 int },
 	param2 struct{ A, B, C string },
@@ -17,8 +17,8 @@ func InlineStructLong(
 ) {
 }
 
-// MethodWithInlineStructsInterface проверяет метод интерфейса с встроенными структурами.
-// Должен переформатироваться (упаковаться).
+// MethodWithInlineStructsInterface checks interface method with inline structs.
+// Should be reformatted (packed).
 type MethodWithInlineStructsInterface interface {
 	MethodWithInlineStructs(
 		p1 struct{ A, B int },
@@ -28,22 +28,22 @@ type MethodWithInlineStructsInterface interface {
 	) // want "Signature can be reformatted more compactly"
 }
 
-// NestedTypeShort проверяет вложенные типы, влезающие в одну строку.
+// NestedTypeShort checks nested types that fit on one line.
 func NestedTypeShort(
 	m map[string]func(int) []byte,
 ) {} // want "Multi-line signature can be collapsed to one line"
 
-// FuncParamShort проверяет функцию как параметр.
+// FuncParamShort checks function as parameter.
 func FuncParamShort(
 	handler func(string) (int, error),
 ) {} // want "Multi-line signature can be collapsed to one line"
 
-// VariadicComplex проверяет вариадический параметр сложного типа.
+// VariadicComplex checks variadic parameter of complex type.
 func VariadicComplex(
 	items ...struct{ ID string },
 ) {} // want "Multi-line signature can be collapsed to one line"
 
-// ComplexStructField проверяет поле-функцию со сложными типами.
+// ComplexStructField checks func field with complex types.
 type ComplexStructField struct {
 	ComplexField func(
 		a map[string]struct{ X int },

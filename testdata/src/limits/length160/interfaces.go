@@ -2,24 +2,24 @@ package length160
 
 import "context"
 
-// Простой интерфейс с методом, который должен схлопнуться.
+// Simple interface with a method that should be collapsed.
 type MyInterface interface {
 	Method(
 		ctx context.Context,
 	) error // want "Multi-line signature can be collapsed to one line"
 
-	// Метод уже в одну строку
+	// Method already on one line
 	OneLineMethod()
 }
 
-// Интерфейс с несколькими методами.
+// Interface with multiple methods.
 type ComplexInterface interface {
-	// Короткий метод - должен схлопнуться
+	// Short method - should be collapsed
 	Get(
 		id string,
 	) error // want "Multi-line signature can be collapsed to one line"
 
-	// Длинный метод - должен остаться разбитым
+	// Long method - should remain split
 	ProcessWithVeryLongNameAndManyParameters(
 		parameterOne string,
 		parameterTwo string,
@@ -27,7 +27,7 @@ type ComplexInterface interface {
 		parameterFour string,
 	) error // want "Multi-line signature can be collapsed to one line"
 
-	// Метод с контекстом
+	// Method with context
 	ProcessWithContext(
 		ctx context.Context,
 		parameterOne string,
@@ -36,7 +36,7 @@ type ComplexInterface interface {
 		parameterFour string,
 	) error // want "Multi-line signature can be collapsed to one line"
 
-	// Очень много параметров
+	// Very many parameters
 	ProcessManyParams(
 		parameterOne string,
 		parameterTwo string,
@@ -48,18 +48,18 @@ type ComplexInterface interface {
 		parameterEight string,
 	) error // want "Signature can be reformatted more compactly"
 
-	// Метод с несколькими возвращаемыми значениями - должен схлопнуться
+	// Method with multiple return values - should be collapsed
 	GetMultiple(
 		id string,
 	) (string, error) // want "Multi-line signature can be collapsed to one line"
 
-	// Метод с именованными возвращаемыми значениями - должен схлопнуться
+	// Method with named return values - should be collapsed
 	GetNamed(
 		id string,
 	) (result string, err error) // want "Multi-line signature can be collapsed to one line"
 }
 
-// Интерфейс с дженериками.
+// Interface with generics.
 type GenericInterface[T any] interface {
 	Process(
 		item T,
@@ -68,7 +68,7 @@ type GenericInterface[T any] interface {
 	GetAll() []T
 }
 
-// Интерфейс с несколькими type parameters.
+// Interface with multiple type parameters.
 type MultiGenericInterface[K comparable, V any] interface {
 	Get(
 		key K,
@@ -82,7 +82,7 @@ type MultiGenericInterface[K comparable, V any] interface {
 	Delete(key K)
 }
 
-// Очень длинный метод интерфейса (не должен схлопываться).
+// Very long interface method (should not be collapsed).
 type VeryLongInterface interface {
 	VeryLongMethodNameThatShouldNotBeCollapsed(
 		parameterWithVeryLongName string,
@@ -91,14 +91,14 @@ type VeryLongInterface interface {
 	) error // want "Signature can be reformatted more compactly"
 }
 
-// Интерфейс с вариадическими параметрами.
+// Interface with variadic parameters.
 type VariadicInterface interface {
 	Process(
 		items ...string,
 	) error // want "Multi-line signature can be collapsed to one line"
 }
 
-// Интерфейс с функциональными типами в параметрах.
+// Interface with functional types in parameters.
 type HandlerInterface interface {
 	Handle(
 		ctx context.Context,
@@ -108,10 +108,10 @@ type HandlerInterface interface {
 	HandleMultiple(ctx context.Context, handlers ...func(string) error) error
 }
 
-// Пустой интерфейс.
+// Empty interface.
 type EmptyInterface interface{}
 
-// Интерфейс с mixed параметрами.
+// Interface with mixed parameters.
 type MixedInterface interface {
 	Process(
 		a, b int,

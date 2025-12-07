@@ -2,8 +2,8 @@ package length140
 
 import "context"
 
-// Обычная функция, разбитая на строки.
-// Должна схлопнуться, так как длина < 120.
+// Regular function split across lines.
+// Should be collapsed since length < 120.
 func ShortFunction(
 	a int,
 	b string,
@@ -11,12 +11,12 @@ func ShortFunction(
 	return nil
 }
 
-// Функция уже в одну строку.
-// Линтер должен проигнорировать.
+// Function already on one line.
+// Linter should ignore.
 func AlreadyOneLine(a int, b int) {}
 
-// Очень длинная функция.
-// Должна остаться разбитой.
+// Very long function.
+// Should remain split across lines.
 func VeryLongFunctionThatShouldNotBeCollapsed(
 	paramOneWithVeryLongName string,
 	paramTwoWithVeryLongName string,
@@ -26,7 +26,7 @@ func VeryLongFunctionThatShouldNotBeCollapsed(
 ) {
 }
 
-// Функция с несколькими возвращаемыми значениями.
+// Function with multiple return values.
 func MultipleReturns(
 	x int,
 	y int,
@@ -34,7 +34,7 @@ func MultipleReturns(
 	return x + y, nil
 }
 
-// Функция с именованными возвращаемыми значениями.
+// Function with named return values.
 func NamedReturns(
 	a int,
 	b int,
@@ -42,7 +42,7 @@ func NamedReturns(
 	return a + b, nil
 }
 
-// Функция с вариадическими параметрами.
+// Function with variadic parameters.
 func Sum(
 	nums ...int,
 ) int { // want "Multi-line signature can be collapsed to one line"
@@ -53,19 +53,19 @@ func Sum(
 	return total
 }
 
-// Функция без параметров.
+// Function without parameters.
 func NoParams() error {
 	return nil
 }
 
-// Функция без возвращаемых значений.
+// Function without return values.
 func NoReturn(
 	msg string,
 ) { // want "Multi-line signature can be collapsed to one line"
 	println(msg)
 }
 
-// Функция с mixed параметрами.
+// Function with mixed parameters.
 func MixedParams(
 	a, b int,
 	c string,
@@ -73,13 +73,13 @@ func MixedParams(
 	return nil
 }
 
-// Граничный случай - ровно 120 символов.
+// Boundary case - exactly 120 characters.
 func ExactlyAtLimit(aaaaaa int, bbbbbb int, cccccc int, dddddd int, eeeeee int, ffffff int, gggggg int) int {
 	return 0
 }
 
-// Дженерики (Generics).
-// Должно схлопнуться корректно: func Generic[T any](val T)
+// Generics.
+// Should be collapsed correctly: func Generic[T any](val T)
 func Generic[
 	T any,
 ](
@@ -87,7 +87,7 @@ func Generic[
 ) { // want "Multi-line signature can be collapsed to one line"
 }
 
-// Сложные дженерики с несколькими type parameters.
+// Complex generics with multiple type parameters.
 func Map[
 	T any,
 	R any,
@@ -102,10 +102,10 @@ func Map[
 	return result
 }
 
-// Функция уже в одну строку с дженериками (не должна изменяться).
+// Function already on one line with generics (should not be changed).
 func AlreadyOneLineGeneric[T any](val T) T { return val }
 
-// Методы с receiver'ом.
+// Methods with receiver.
 type Calculator struct{}
 
 func (c *Calculator) Add(
@@ -119,8 +119,8 @@ func (c *Calculator) Multiply(x int, y int) int {
 	return x * y
 }
 
-// Анонимная функция (Closure).
-// Назначение переменной.
+// Anonymous function (Closure).
+// Variable assignment.
 var myFunc = func(
 	a int,
 	b int,

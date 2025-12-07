@@ -3,10 +3,10 @@ version: "2"
 linters:
   default: none
   enable:
-    - funcwrap
+    - sigfmt
   settings:
     custom:
-      funcwrap:
+      sigfmt:
         type: "module"
         description: "Checks if multi-line function signatures can be collapsed to one line or formatted better"
         settings:

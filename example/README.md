@@ -1,6 +1,6 @@
 # Example Linter Integration
 
-This directory demonstrates how to use the `funcwrap-linter` as a module plugin for `golangci-lint`.
+This directory demonstrates how to use the `sigfmt-linter` as a module plugin for `golangci-lint`.
 
 ## Prerequisites
 
@@ -28,12 +28,12 @@ Run the custom linter on the code:
 You should see output similar to:
 
 ```text
-main.go:10:1: Signature fits in one line (funcwrap)
+main.go:10:1: Signature fits in one line (sigfmt)
 func CheckSignature(
 ^
 ```
 
 ## Configuration
 
-The linter is configured in `.golangci.yml` under `linters.settings.custom.funcwrap`.
+The linter is configured in `.golangci.yml` under `linters.settings.custom.sigfmt`.
 You can adjust `max-line-len` (default 120) to control when signatures should be collapsed.
