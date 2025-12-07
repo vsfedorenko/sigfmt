@@ -5,12 +5,13 @@ import (
 	"go/token"
 
 	"github.com/golangci/plugin-module-register/register"
+	"golang.org/x/tools/go/analysis"
+
 	"github.com/vsfedorenko/sigfmt/internal/astinfo"
 	"github.com/vsfedorenko/sigfmt/internal/config"
 	"github.com/vsfedorenko/sigfmt/internal/domain"
 	"github.com/vsfedorenko/sigfmt/internal/format"
 	"github.com/vsfedorenko/sigfmt/internal/render"
-	"golang.org/x/tools/go/analysis"
 )
 
 const (

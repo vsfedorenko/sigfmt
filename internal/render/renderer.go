@@ -5,8 +5,9 @@ import (
 	"go/ast"
 	"go/printer"
 	"go/token"
-	"os"
 	"strings"
+
+	"github.com/vsfedorenko/sigfmt/internal/pkg/field"
 )
 
 // Renderer handles AST-to-text rendering and indentation calculations.
@@ -17,19 +18,6 @@ type Renderer struct {
 // New creates a new Renderer.
 func New(tabWidth int) *Renderer {
 	return &Renderer{tabWidth: tabWidth}
-}
-
-// VisualLength calculates the visual length of a string, accounting for tab expansion.
-func (r *Renderer) VisualLength(s string) int {
-	length := 0
-	for _, c := range s {
-		if c == '\t' {
-			length += r.tabWidth
-		} else {
-			length++
-		}
-	}
-	return length
 }
 
 // Results converts the results list (return values) to a string.
@@ -75,62 +63,20 @@ func (r *Renderer) FieldList(fset *token.FileSet, fl *ast.FieldList, openBracket
 	var sb strings.Builder
 	sb.WriteString(openBracket)
 
-	for i, field := range fl.List {
+	for i, f := range fl.List {
 		if i > 0 {
 			sb.WriteString(", ")
 		}
 
-		for j, name := range field.Names {
-			if j > 0 {
-				sb.WriteString(", ")
-			}
-			sb.WriteString(name.Name)
-		}
-
-		if len(field.Names) > 0 {
+		names := field.RenderNames(f.Names)
+		if names != "" {
+			sb.WriteString(names)
 			sb.WriteString(" ")
 		}
 
-		sb.WriteString(r.Node(fset, field.Type))
+		sb.WriteString(r.Node(fset, f.Type))
 	}
 
 	sb.WriteString(closeBracket)
 	return sb.String()
-}
-
-// GetIndent reads the source file to find the indentation of the line containing pos.
-func (r *Renderer) GetIndent(fset *token.FileSet, pos token.Pos) string {
-	f := fset.File(pos)
-	if f == nil {
-		return ""
-	}
-
-	content, err := os.ReadFile(f.Name())
-	if err != nil {
-		return ""
-	}
-
-	offset := f.Offset(pos)
-	if offset >= len(content) {
-		return ""
-	}
-
-	lineStart := f.LineStart(f.Line(pos))
-	lineStartOffset := f.Offset(lineStart)
-
-	if lineStartOffset > offset {
-		return ""
-	}
-
-	prefix := content[lineStartOffset:offset]
-
-	var indent strings.Builder
-	for _, b := range prefix {
-		if b == ' ' || b == '\t' {
-			indent.WriteByte(b)
-		} else {
-			break
-		}
-	}
-	return indent.String()
 }

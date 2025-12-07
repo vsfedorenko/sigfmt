@@ -10,8 +10,7 @@ func SingleParam(
 }
 
 // Function with no parameters but multi-line.
-func NoParamsEdgeCase(
-) error { // want "Signature can be formatted more compactly"
+func NoParamsEdgeCase() error {
 	return nil
 }
 

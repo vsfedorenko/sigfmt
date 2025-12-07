@@ -59,7 +59,7 @@ vet: ## Run go vet
 .PHONY: build-example
 build-example: ## Build custom golangci-lint with this linter
 	@echo "Building custom golangci-lint binary..."
-	@cd example && golangci-lint custom -o custom-gcl
+	@cd example && golangci-lint custom
 	@echo "Custom binary built: example/custom-gcl"
 
 .PHONY: install-example

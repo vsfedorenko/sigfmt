@@ -21,34 +21,33 @@ func New(renderer *render.Renderer) *Extractor {
 
 // FuncDecl extracts info from a function declaration.
 func (e *Extractor) FuncDecl(fset *token.FileSet, decl *ast.FuncDecl) *domain.Signature {
-	start := decl.Type.Func
-	end := decl.Type.Params.End()
-	if decl.Type.Results != nil {
-		end = decl.Type.Results.End()
-	}
-
-	if !start.IsValid() || !end.IsValid() {
-		return nil
-	}
-
-	return &domain.Signature{
-		Start:         start,
-		End:           end,
-		DiagPos:       computeDiagPos(decl.Type.Params, decl.Type.Results),
-		OneLineText:   e.buildFuncDeclSignature(fset, decl),
-		FuncType:      decl.Type,
-		Receiver:      decl.Recv,
-		Name:          decl.Name.Name,
-		IsStructField: false,
-	}
+	return e.createFuncSignature(
+		fset,
+		decl.Type,
+		decl.Type.Func,
+		e.buildFuncDeclSignature(fset, decl),
+		decl.Recv,
+		decl.Name.Name,
+	)
 }
 
 // FuncLit extracts info from a function literal.
 func (e *Extractor) FuncLit(fset *token.FileSet, lit *ast.FuncLit) *domain.Signature {
-	start := lit.Type.Func
-	end := lit.Type.Params.End()
-	if lit.Type.Results != nil {
-		end = lit.Type.Results.End()
+	return e.createFuncSignature(
+		fset,
+		lit.Type,
+		lit.Type.Func,
+		e.buildFuncLitSignature(fset, lit.Type),
+		nil,
+		"",
+	)
+}
+
+// createFuncSignature is a helper for creating function signatures.
+func (e *Extractor) createFuncSignature(fset *token.FileSet, ft *ast.FuncType, start token.Pos, oneLineText string, receiver *ast.FieldList, name string) *domain.Signature {
+	end := ft.Params.End()
+	if ft.Results != nil {
+		end = ft.Results.End()
 	}
 
 	if !start.IsValid() || !end.IsValid() {
@@ -56,44 +55,36 @@ func (e *Extractor) FuncLit(fset *token.FileSet, lit *ast.FuncLit) *domain.Signa
 	}
 
 	return &domain.Signature{
-		Start:         start,
-		End:           end,
-		DiagPos:       computeDiagPos(lit.Type.Params, lit.Type.Results),
-		OneLineText:   e.buildFuncLitSignature(fset, lit.Type),
-		FuncType:      lit.Type,
-		Receiver:      nil,
-		Name:          "",
-		IsStructField: false,
+		Start:       start,
+		End:         end,
+		DiagPos:     computeDiagPos(ft.Params, ft.Results),
+		OneLineText: oneLineText,
+		FuncType:    ft,
+		Receiver:    receiver,
+		Name:        name,
 	}
 }
 
 // Method extracts info from an interface method.
 func (e *Extractor) Method(fset *token.FileSet, name *ast.Ident, ft *ast.FuncType) *domain.Signature {
-	start := name.Pos()
-	end := ft.Params.End()
-	if ft.Results != nil {
-		end = ft.Results.End()
+	sig := e.createFieldSignature(fset, name, ft, e.buildMethodSignature(fset, name.Name, ft))
+	if sig != nil {
+		sig.IsInterfaceMethod = true
 	}
-
-	if !start.IsValid() || !end.IsValid() {
-		return nil
-	}
-
-	return &domain.Signature{
-		Start:             start,
-		End:               end,
-		DiagPos:           computeDiagPos(ft.Params, ft.Results),
-		OneLineText:       e.buildMethodSignature(fset, name.Name, ft),
-		FuncType:          ft,
-		Receiver:          nil,
-		Name:              name.Name,
-		IsStructField:     false,
-		IsInterfaceMethod: true,
-	}
+	return sig
 }
 
 // StructField extracts info from a struct field.
 func (e *Extractor) StructField(fset *token.FileSet, name *ast.Ident, ft *ast.FuncType) *domain.Signature {
+	sig := e.createFieldSignature(fset, name, ft, e.buildStructFieldSignature(fset, name.Name, ft))
+	if sig != nil {
+		sig.IsStructField = true
+	}
+	return sig
+}
+
+// createFieldSignature is a helper for creating signatures from named fields (methods/struct fields).
+func (e *Extractor) createFieldSignature(fset *token.FileSet, name *ast.Ident, ft *ast.FuncType, oneLineText string) *domain.Signature {
 	start := name.Pos()
 	end := ft.Params.End()
 	if ft.Results != nil {
@@ -105,14 +96,13 @@ func (e *Extractor) StructField(fset *token.FileSet, name *ast.Ident, ft *ast.Fu
 	}
 
 	return &domain.Signature{
-		Start:         start,
-		End:           end,
-		DiagPos:       computeDiagPos(ft.Params, ft.Results),
-		OneLineText:   e.buildStructFieldSignature(fset, name.Name, ft),
-		FuncType:      ft,
-		Receiver:      nil,
-		Name:          name.Name,
-		IsStructField: true,
+		Start:       start,
+		End:         end,
+		DiagPos:     computeDiagPos(ft.Params, ft.Results),
+		OneLineText: oneLineText,
+		FuncType:    ft,
+		Receiver:    nil,
+		Name:        name.Name,
 	}
 }
 

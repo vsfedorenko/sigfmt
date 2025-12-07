@@ -5,6 +5,18 @@ const (
 	DefaultMaxLineLen = 120
 	// DefaultTabWidth is the default number of spaces a tab character represents for length calculation.
 	DefaultTabWidth = 8
+	// DefaultPackStructFields is the default value for packing struct fields.
+	DefaultPackStructFields = true
+	// DefaultPackInterfaceMethods is the default value for packing interface methods.
+	DefaultPackInterfaceMethods = true
+)
+
+const (
+	keyMaxLineLen           = "max-line-len"
+	keyTabWidth             = "tab-width"
+	keyPackStructFields     = "pack-struct-fields"
+	keyPackInterfaceMethods = "pack-interface-methods"
+	keyParamGroups          = "param-groups"
 )
 
 // Settings contains configuration parameters for the linter.
@@ -27,41 +39,77 @@ type Settings struct {
 
 // New creates a Settings struct from a generic map.
 func New(settings any) Settings {
-	s := Settings{
-		MaxLineLen:           DefaultMaxLineLen,
-		TabWidth:             DefaultTabWidth,
-		PackStructFields:     true,
-		PackInterfaceMethods: true,
+	s := defaults()
+
+	m, ok := settings.(map[string]interface{})
+	if !ok {
+		return s
 	}
 
-	if m, ok := settings.(map[string]interface{}); ok {
-		if v, ok := m["max-line-len"].(float64); ok && v > 0 {
-			s.MaxLineLen = int(v)
-		}
-		if v, ok := m["tab-width"].(float64); ok && v > 0 {
-			s.TabWidth = int(v)
-		}
-		if v, ok := m["pack-struct-fields"].(bool); ok {
-			s.PackStructFields = v
-		}
-		if v, ok := m["pack-interface-methods"].(bool); ok {
-			s.PackInterfaceMethods = v
-		}
-		if groups, ok := m["param-groups"].([]interface{}); ok {
-			for _, g := range groups {
-				if group, ok := g.([]interface{}); ok {
-					var strGroup []string
-					for _, item := range group {
-						if str, ok := item.(string); ok {
-							strGroup = append(strGroup, str)
-						}
-					}
-					if len(strGroup) > 0 {
-						s.ParamGroups = append(s.ParamGroups, strGroup)
-					}
-				}
-			}
+	s.MaxLineLen = parsePositiveInt(m, keyMaxLineLen, s.MaxLineLen)
+	s.TabWidth = parsePositiveInt(m, keyTabWidth, s.TabWidth)
+	s.PackStructFields = parseBool(m, keyPackStructFields, s.PackStructFields)
+	s.PackInterfaceMethods = parseBool(m, keyPackInterfaceMethods, s.PackInterfaceMethods)
+	s.ParamGroups = parseParamGroups(m, keyParamGroups)
+
+	return s
+}
+
+// defaults returns a Settings with default values.
+func defaults() Settings {
+	return Settings{
+		MaxLineLen:           DefaultMaxLineLen,
+		TabWidth:             DefaultTabWidth,
+		PackStructFields:     DefaultPackStructFields,
+		PackInterfaceMethods: DefaultPackInterfaceMethods,
+	}
+}
+
+// parsePositiveInt extracts a positive integer from the map, or returns the default.
+func parsePositiveInt(m map[string]interface{}, key string, defaultValue int) int {
+	if v, ok := m[key].(float64); ok && v > 0 {
+		return int(v)
+	}
+	return defaultValue
+}
+
+// parseBool extracts a boolean from the map, or returns the default.
+func parseBool(m map[string]interface{}, key string, defaultValue bool) bool {
+	if v, ok := m[key].(bool); ok {
+		return v
+	}
+	return defaultValue
+}
+
+// parseParamGroups extracts parameter groups from the map.
+// Each group is a list of type names that should be kept together.
+func parseParamGroups(m map[string]interface{}, key string) [][]string {
+	groups, ok := m[key].([]interface{})
+	if !ok {
+		return nil
+	}
+
+	var result [][]string
+	for _, g := range groups {
+		if group := parseStringSlice(g); len(group) > 0 {
+			result = append(result, group)
 		}
 	}
-	return s
+	return result
+}
+
+// parseStringSlice converts an interface{} slice to a string slice.
+func parseStringSlice(v interface{}) []string {
+	group, ok := v.([]interface{})
+	if !ok {
+		return nil
+	}
+
+	var result []string
+	for _, item := range group {
+		if str, ok := item.(string); ok {
+			result = append(result, str)
+		}
+	}
+	return result
 }

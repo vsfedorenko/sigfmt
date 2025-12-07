@@ -6,6 +6,8 @@ import (
 
 	"github.com/vsfedorenko/sigfmt/internal/config"
 	"github.com/vsfedorenko/sigfmt/internal/domain"
+	"github.com/vsfedorenko/sigfmt/internal/pkg/source"
+	"github.com/vsfedorenko/sigfmt/internal/pkg/text"
 	"github.com/vsfedorenko/sigfmt/internal/render"
 )
 
@@ -37,9 +39,9 @@ func (s *CollapseStrategy) Apply(fset *token.FileSet, sig *domain.Signature) (st
 	startLine := fset.Position(sig.Start).Line
 	endLine := fset.Position(sig.End).Line
 
-	baseIndent := s.renderer.GetIndent(fset, sig.Start)
-	baseIndentLen := s.renderer.VisualLength(baseIndent)
-	oneLineVisualLen := s.renderer.VisualLength(sig.OneLineText)
+	baseIndent := source.GetIndent(fset, sig.Start)
+	baseIndentLen := text.VisualLength(baseIndent, s.config.TabWidth)
+	oneLineVisualLen := text.VisualLength(sig.OneLineText, s.config.TabWidth)
 
 	if baseIndentLen+oneLineVisualLen <= s.config.MaxLineLen {
 		if startLine != endLine {

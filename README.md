@@ -126,11 +126,14 @@ To run the linter, use your custom binary:
 
 ## 🧠 How It Works
 
-The linter operates in two stages:
+The linter analyzes function signatures using the Go AST (Abstract Syntax Tree) and applies a two-stage formatting strategy:
 
-#### 1. Collapse
-Checks if the entire signature can be written on one line within `max-line-len`.
+#### 1. Collapse Stage
+**Goal:** Maximize compactness for short signatures.
 
+The linter calculates the visual width of a signature if it were on a single line. If it fits within `max-line-len` (default 120), the signature **must** be collapsed.
+
+**Example:**
 ```diff
 - func Sum(
 -     a int,
@@ -139,43 +142,240 @@ Checks if the entire signature can be written on one line within `max-line-len`.
 + func Sum(a int, b int) int { ... }
 ```
 
-#### 2. Reformat / Packing
-If a signature **doesn't** fit on one line, the linter applies context-aware strategies.
+**Diagnostic Message:** `"Signature can be formatted more compactly"`
+**Suggested Fix Message:** `"Format signature"`
 
-*   **Regular functions**: Conservative approach. Preserves existing grouping unless clearly broken.
-*   **Interfaces and Structs**: Aggressive packing to save vertical space.
+This applies to:
+- Function declarations
+- Type methods (with receivers)
+- Anonymous functions / closures
+- Interface methods
+- Struct fields with function types
+
+#### 2. Reformat / Packing Stage
+**Goal:** Optimize vertical space for long signatures.
+
+If a signature **doesn't** fit on one line, the linter applies context-aware packing strategies.
+The diagnostic message for this stage is the same as for the collapse stage: `"Signature can be formatted more compactly"`, with the fix message `"Format signature"`.
+
+##### A. Regular Functions (Conservative)
+Preserves logical parameter grouping. Uses minimal reformatting to respect developer intent.
 
 ```diff
-type Logger interface {
+  func ProcessData(
+-     param1 string,
+-     param2 string,
+-     param3 int,
+-     param4 bool,
+  ) error {
++ func ProcessData(
++     param1 string, param2 string,
++     param3 int, param4 bool,
++ ) error {
+      // ...
+  }
+```
+
+##### B. Interfaces & Structs (Aggressive)
+Packs multiple parameters per line to minimize vertical space bloat. Interface definitions often have many similar methods, so aggressive packing significantly improves readability.
+
+```diff
+  type Logger interface {
 -     Log(
 -         level Level,
 -         msg string,
 -         args ...interface{},
 -     )
 +     Log(level Level, msg string, args ...interface{})
-}
+
+-     Error(
+-         msg string,
+-         err error,
+-     )
++     Error(msg string, err error)
+  }
+```
+
+##### C. Parameter Groups (Advanced)
+When configured with `param-groups`, the linter keeps semantically related parameters together on the same line:
+
+```yaml
+param-groups:
+  - ["context.Context", "*sql.Tx"]  # Always group ctx and tx
+  - ["context.Context"]              # If no tx, keep ctx on its own line
+```
+
+```diff
+- func Query(
+-     ctx context.Context,
+-     tx *sql.Tx,
+-     sql string,
+-     args ...interface{},
+- ) error {
++ func Query(
++     ctx context.Context, tx *sql.Tx,
++     sql string, args ...interface{},
++ ) error {
+      // ...
+  }
+```
+
+#### Width Calculation
+The linter calculates visual width considering:
+- Tab expansion (`tab-width`, default 8)
+- Receiver length (for methods)
+- Type parameter length (for generics)
+- Return type length
+- Comment preservation
+
+**Example:**
+```go
+// Visual width = len("func Map[T any, R any](items []T, fn func(T) R) []R")
+func Map[T any, R any](items []T, fn func(T) R) []R  // 54 chars (fits in 120)
 ```
 
 ## 📸 Examples Gallery
 
-### API Handlers
+### 1. Basic Function Collapsing
+
+**Simple Functions:**
 ```diff
-- func CreateUser(
--     w http.ResponseWriter,
--     r *http.Request,
-- ) {
-+ func CreateUser(w http.ResponseWriter, r *http.Request) {
-      // ...
+- func ShortFunction(
+-     a int,
+-     b string,
+- ) error {
++ func ShortFunction(a int, b string) error {
+      return nil
   }
 
-- func UpdateUser(w http.ResponseWriter, r *http.Request, id string,
--     name string, email string) {
-+ func UpdateUser(w http.ResponseWriter, r *http.Request, id string, name string, email string) {
-      // ...
+- func Sum(
+-     nums ...int,
+- ) int {
++ func Sum(nums ...int) int {
+      total := 0
+      for _, n := range nums {
+          total += n
+      }
+      return total
   }
 ```
 
-### Service Interfaces
+**Multiple Return Values:**
+```diff
+- func MultipleReturns(
+-     x int,
+-     y int,
+- ) (int, error) {
++ func MultipleReturns(x int, y int) (int, error) {
+      return x + y, nil
+  }
+
+- func NamedReturns(
+-     a int,
+-     b int,
+- ) (sum int, err error) {
++ func NamedReturns(a int, b int) (sum int, err error) {
+      return a + b, nil
+  }
+```
+
+**Mixed Parameters (shorthand notation):**
+```diff
+- func MixedParams(
+-     a, b int,
+-     c string,
+- ) error {
++ func MixedParams(a, b int, c string) error {
+      return nil
+  }
+```
+
+### 2. Methods
+
+**Type Methods:**
+```diff
+  type Calculator struct{}
+
+- func (c *Calculator) Add(
+-     a int,
+-     b int,
+- ) int {
++ func (c *Calculator) Add(a int, b int) int {
+      return a + b
+  }
+```
+
+**Anonymous Functions / Closures:**
+```diff
+- var myFunc = func(
+-     a int,
+-     b int,
+- ) int {
++ var myFunc = func(a int, b int) int {
+      return a + b
+  }
+
+  group.Go(
+-     func(
+-         ctx context.Context,
+-     ) error {
++     func(ctx context.Context) error {
+          // ...
+      },
+  )
+```
+
+### 3. Interfaces (Aggressive Packing)
+
+**Simple Interface Methods:**
+```diff
+  type MyInterface interface {
+-     Method(
+-         ctx context.Context,
+-     ) error
++     Method(ctx context.Context) error
+
+-     Get(
+-         id string,
+-     ) error
++     Get(id string) error
+
+-     GetMultiple(
+-         id string,
+-     ) (string, error)
++     GetMultiple(id string) (string, error)
+  }
+```
+
+**Complex Interfaces (Packing Multiple Parameters Per Line):**
+```diff
+  type ComplexInterface interface {
+-     ProcessWithVeryLongNameAndManyParameters(
+-         parameterOne string,
+-         parameterTwo string,
+-         parameterThree string,
+-         parameterFour string,
+-     ) error
++     ProcessWithVeryLongNameAndManyParameters(parameterOne string, parameterTwo string,
++         parameterThree string, parameterFour string) error
+
+-     ProcessManyParams(
+-         parameterOne string,
+-         parameterTwo string,
+-         parameterThree string,
+-         parameterFour string,
+-         parameterFive string,
+-         parameterSix string,
+-         parameterSeven string,
+-         parameterEight string,
+-     ) error
++     ProcessManyParams(parameterOne string, parameterTwo string, parameterThree string,
++         parameterFour string, parameterFive string, parameterSix string,
++         parameterSeven string, parameterEight string) error
+  }
+```
+
+**Service Interfaces (Real-World Example):**
 ```diff
 - type UserRepository interface {
 -     Create(
@@ -202,20 +402,207 @@ type Logger interface {
 +     Delete(ctx context.Context, id int) error
 + }
 ```
-*(Reduced from 121 lines to 45 lines — 63% savings)*
 
-### Generics (Go 1.18+)
+**Variadic Interface Methods:**
 ```diff
-- func Map[T any, R any](
--     slice []T,
--     fn func(T) R,
-- ) []R {
-+ func Map[T any, R any](slice []T, fn func(T) R) []R {
+  type VariadicInterface interface {
+-     Process(
+-         items ...string,
+-     ) error
++     Process(items ...string) error
+  }
+```
+
+**Handler Interfaces (Functional Parameters):**
+```diff
+  type HandlerInterface interface {
+-     Handle(
+-         ctx context.Context,
+-         handler func(string) error,
+-     ) error
++     Handle(ctx context.Context, handler func(string) error) error
+
+      HandleMultiple(ctx context.Context, handlers ...func(string) error) error
+  }
+```
+
+### 4. Struct Fields with Function Types
+
+**Simple Handlers:**
+```diff
+  type Handler struct {
+-     Process func(
+-         ctx context.Context,
+-     ) error
++     Process func(ctx context.Context) error
+  }
+```
+
+**Multiple Function Fields:**
+```diff
+  type MultiHandler struct {
+-     OnStart func(
+-         id string,
+-     ) error
++     OnStart func(id string) error
+
+      OnStop func() error
+
+-     OnProcessWithVeryLongNameAndManyParameters func(
+-         parameterOne string,
+-         parameterTwo string,
+-         parameterThree string,
+-         parameterFour string,
+-     ) error
++     OnProcessWithVeryLongNameAndManyParameters func(parameterOne string,
++         parameterTwo string, parameterThree string, parameterFour string) error
+
+-     GetData func(
+-         key string,
+-     ) (string, error)
++     GetData func(key string) (string, error)
+  }
+```
+
+**Variadic and Named Returns:**
+```diff
+  type VariadicHandler struct {
+-     Process func(
+-         items ...string,
+-     ) error
++     Process func(items ...string) error
+  }
+
+  type NamedReturnsHandler struct {
+-     Process func(
+-         id string,
+-     ) (result string, err error)
++     Process func(id string) (result string, err error)
+  }
+```
+
+**Higher-Order Functions:**
+```diff
+  type HigherOrderHandler struct {
+-     GetHandler func(
+-         config string,
+-     ) func(string) error
++     GetHandler func(config string) func(string) error
+  }
+
+  type CallbackHandler struct {
+-     Process func(
+-         callback func(string) error,
+-     ) error
++     Process func(callback func(string) error) error
+
+      ProcessMultiple func(callback func(string) error, fallback func() error) error
+  }
+```
+
+### 5. Generics (Go 1.18+)
+
+**Basic Generics:**
+```diff
+- func Generic[
+-     T any,
+- ](
+-     val T,
+- ) {
++ func Generic[T any](val T) {
       // ...
   }
 ```
 
-### Complex Function Signatures
+**Multiple Type Parameters:**
+```diff
+- func Map[
+-     T any,
+-     R any,
+- ](
+-     items []T,
+-     fn func(T) R,
+- ) []R {
++ func Map[T any, R any](items []T, fn func(T) R) []R {
+      result := make([]R, len(items))
+      for i, item := range items {
+          result[i] = fn(item)
+      }
+      return result
+  }
+```
+
+**Generic Interfaces:**
+```diff
+  type GenericInterface[T any] interface {
+-     Process(
+-         item T,
+-     ) error
++     Process(item T) error
+
+      GetAll() []T
+  }
+
+  type MultiGenericInterface[K comparable, V any] interface {
+-     Get(
+-         key K,
+-     ) (V, bool)
++     Get(key K) (V, bool)
+
+-     Set(
+-         key K,
+-         value V,
+-     ) error
++     Set(key K, value V) error
+
+      Delete(key K)
+  }
+```
+
+**Generic Struct Fields:**
+```diff
+  type GenericHandler[T any] struct {
+-     Process func(
+-         item T,
+-     ) error
++     Process func(item T) error
+
+      Transform func(item T) T
+  }
+```
+
+### 6. Complex Type Definitions
+
+**Channel Types:**
+```diff
+- func Stream(
+-     ctx context.Context,
+-     in <-chan Item,
+-     out chan<- Result,
+- ) error {
++ func Stream(ctx context.Context, in <-chan Item, out chan<- Result) error {
+      // ...
+  }
+```
+
+**API Handlers:**
+```diff
+- func CreateUser(
+-     w http.ResponseWriter,
+-     r *http.Request,
+- ) {
++ func CreateUser(w http.ResponseWriter, r *http.Request) {
+      // ...
+  }
+
+- func UpdateUser(w http.ResponseWriter, r *http.Request, id string,
+-     name string, email string) {
++ func UpdateUser(w http.ResponseWriter, r *http.Request, id string, name string, email string) {
+      // ...
+  }
+```
+
+**Complex Order Processing:**
 ```diff
 - func ProcessOrder(
 -     ctx context.Context,
@@ -233,8 +620,69 @@ type Logger interface {
   }
 ```
 
-### Grouping Parameters (Reformat)
-When parameters don't fit on one line, `sigfmt` groups them logically to save vertical space while maintaining readability.
+### 7. Parameter Grouping (Advanced Feature)
+
+When using `param-groups` configuration, related parameters are kept together for better semantic organization:
+
+**Database Operations (context.Context + *sql.Tx grouping):**
+```diff
+  // Configuration: param-groups: [["context.Context", "*sql.Tx"]]
+
+- func LongQueryFunctionWithManyArguments(
+-     ctx context.Context,
+-     tx *sql.Tx,
+-     query string,
+-     args ...interface{},
+- ) error {
++ func LongQueryFunctionWithManyArguments(
++     ctx context.Context, tx *sql.Tx,
++     query string, args ...interface{}) error {
+      return nil
+  }
+```
+
+**Repository Interface with Grouping:**
+```diff
+  type Repository interface {
+-     Create(
+-         ctx context.Context,
+-         tx *sql.Tx,
+-         id int,
+-         name string,
+-     ) error
++     Create(ctx context.Context, tx *sql.Tx,
++         id int, name string) error
+
+-     Update(
+-         ctx context.Context,
+-         data []byte,
+-     ) error
++     Update(ctx context.Context, data []byte) error
+  }
+```
+
+**Handler Functions with Grouping:**
+```diff
+  type Handler struct {
+-     OnCreate func(
+-         ctx context.Context,
+-         tx *sql.Tx,
+-         data string,
+-     ) error
++     OnCreate func(ctx context.Context,
++         tx *sql.Tx, data string) error
+
+-     OnUpdate func(
+-         ctx context.Context,
+-         id int,
+-     ) error
++     OnUpdate func(ctx context.Context, id int) error
+  }
+```
+
+### 8. Long Signatures (Reformatting Strategy)
+
+When signatures don't fit on one line, `sigfmt` applies intelligent packing to maximize readability while minimizing vertical space:
 
 ```diff
   func ComplexCalculation(
@@ -255,38 +703,29 @@ When parameters don't fit on one line, `sigfmt` groups them logically to save ve
   }
 ```
 
-### Struct Fields
-```diff
-type Component struct {
--     Render func(
--         ctx context.Context,
--         props Props,
--     ) (Node, error)
-+     Render func(ctx context.Context, props Props) (Node, error)
-}
-```
+### 9. Local Structs in Functions
 
-### Anonymous Functions (Callbacks)
 ```diff
-  group.Go(
--     func(
--         ctx context.Context,
--     ) error {
-+     func(ctx context.Context) error {
-          // ...
-      },
-  )
-```
+  func ComplexCase() {
+      type LocalStruct struct {
+-         Handler func(
+-             ctx context.Context,
+-             id string,
+-         ) error
++         Handler func(ctx context.Context, id string) error
 
-### Complex Type Definitions
-```diff
-- func Stream(
--     ctx context.Context,
--     in <-chan Item,
--     out chan<- Result,
-- ) error {
-+ func Stream(ctx context.Context, in <-chan Item, out chan<- Result) error {
-      // ...
+          Simple func() error
+
+-         VeryLongHandler func(
+-             parameterWithVeryLongName string,
+-             anotherParameterWithVeryLongName string,
+-             yetAnotherParameterWithVeryLongName string,
+-         ) error
++         VeryLongHandler func(parameterWithVeryLongName string,
++             anotherParameterWithVeryLongName string,
++             yetAnotherParameterWithVeryLongName string) error
+      }
+      _ = LocalStruct{}
   }
 ```
 
@@ -306,6 +745,34 @@ Yes, use `pack-struct-fields: false` and `pack-interface-methods: false`.
 
 **How to handle special cases?**
 Use `//nolint:sigfmt` to ignore specific functions.
+
+## 💻 Development
+
+The project uses `Makefile` for common development tasks:
+
+*   `make test`: Run all tests.
+*   `make test-race`: Run tests with the race detector.
+*   `make test-coverage`: Generate a test coverage report.
+*   `make test-update-golden`: Update golden files (use when diagnostic messages or expected fixes change).
+*   `make fmt`: Format Go code.
+*   `make lint`: Run linters.
+*   `make check`: Run all checks (test, fmt, lint).
+*   `make build-example`: Build the example custom `golangci-lint` binary.
+*   `make run-example`: Run the linter on the example project.
+*   `make clean`: Clean up build artifacts.
+
+### Updating Diagnostic Messages
+
+When updating diagnostic messages or changing the expected output of the linter, follow these steps:
+1.  Update constants in `linter.go` (or `internal/format/formatter.go` for messages).
+2.  Run tests (`make test`). They will likely fail, indicating where the messages need to be updated.
+3.  Update diagnostic messages in test files: `find testdata/src -name "*.go" -exec sed -i '' 's/OLD_MESSAGE/NEW_MESSAGE/g' {} \;` (replace `OLD_MESSAGE` and `NEW_MESSAGE` accordingly).
+4.  Update golden files: `make test-update-golden`
+5.  Verify all tests pass: `make test`
+
+## ❤️ Community & Acknowledgements
+
+This project is made with ❤️ for the open-source community by [Vadim Fedorenko](https://github.com/vsfedorenko).
 
 ## 🤝 Contributing
 

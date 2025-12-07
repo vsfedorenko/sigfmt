@@ -114,11 +114,11 @@ func TestDefinitionPackingStrategy(t *testing.T) {
 	r := render.New(4)
 
 	tests := []struct {
-		name             string
-		cfg              config.Settings
-		isInterface      bool
-		isStruct         bool
-		wantApplied      bool
+		name        string
+		cfg         config.Settings
+		isInterface bool
+		isStruct    bool
+		wantApplied bool
 	}{
 		{
 			name:        "InterfaceMethod_PackingEnabled",

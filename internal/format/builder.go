@@ -7,6 +7,9 @@ import (
 
 	"github.com/vsfedorenko/sigfmt/internal/config"
 	"github.com/vsfedorenko/sigfmt/internal/domain"
+	"github.com/vsfedorenko/sigfmt/internal/pkg/field"
+	"github.com/vsfedorenko/sigfmt/internal/pkg/source"
+	"github.com/vsfedorenko/sigfmt/internal/pkg/text"
 	"github.com/vsfedorenko/sigfmt/internal/render"
 )
 
@@ -52,13 +55,13 @@ func (b *Builder) BuildReformattedSignature(fset *token.FileSet, sig *domain.Sig
 		sb.WriteString(b.renderer.FieldList(fset, sig.FuncType.TypeParams, "[", "]"))
 	}
 
-	baseIndent := b.renderer.GetIndent(fset, sig.Start)
+	baseIndent := source.GetIndent(fset, sig.Start)
 	indentUnit := "\t"
 	if strings.Contains(baseIndent, " ") && !strings.Contains(baseIndent, "\t") {
 		indentUnit = "    "
 	}
 	paramIndent := baseIndent + indentUnit
-	baseIndentLen := b.renderer.VisualLength(baseIndent)
+	baseIndentLen := text.VisualLength(baseIndent, b.config.TabWidth)
 
 	sb.WriteString(b.renderFieldListGrouped(fset, sig.FuncType.Params, sig, "(", ")", paramIndent, baseIndentLen))
 
@@ -74,60 +77,58 @@ func (b *Builder) renderFieldListGrouped(fset *token.FileSet, fl *ast.FieldList,
 		return openBracket + closeBracket
 	}
 
-	prefixLen := baseIndentLen + b.renderer.VisualLength(sig.OneLineText) - b.renderer.VisualLength(b.renderer.FieldList(fset, fl, openBracket, closeBracket))
+	prefixLen := baseIndentLen + text.VisualLength(sig.OneLineText, b.config.TabWidth) - text.VisualLength(b.renderer.FieldList(fset, fl, openBracket, closeBracket), b.config.TabWidth)
 	if sig.FuncType.Results != nil {
-		prefixLen -= b.renderer.VisualLength(b.renderer.Results(fset, sig.FuncType.Results))
+		prefixLen -= text.VisualLength(b.renderer.Results(fset, sig.FuncType.Results), b.config.TabWidth)
 	}
-	prefixLen += b.renderer.VisualLength(openBracket)
+	prefixLen += text.VisualLength(openBracket, b.config.TabWidth)
 
 	writer := b.newBuilderLineWriter(indent, openBracket, prefixLen)
 
 	i := 0
 	for i < len(fl.List) {
-		matchedGroupLen := 0
-		for _, group := range b.config.ParamGroups {
-			if b.matchesGroup(fset, fl.List, i, group) {
-				matchedGroupLen = len(group)
-				break
-			}
-		}
+		fieldsToProcess, isGroupMatch := b.getFieldsToProcess(fset, fl.List, i)
 
-		fieldsToProcess := 1
-		isGroupMatch := false
-		if matchedGroupLen > 0 {
-			fieldsToProcess = matchedGroupLen
-			isGroupMatch = true
-		}
-
-		var fieldStrs []string
 		for k := 0; k < fieldsToProcess; k++ {
-			field := fl.List[i+k]
-			var fieldStr string
-			for j, name := range field.Names {
-				if j > 0 {
-					fieldStr += ", "
-				}
-				fieldStr += name.Name
-			}
-			if len(field.Names) > 0 {
-				fieldStr += " "
-			}
-			fieldStr += b.renderer.Node(fset, field.Type)
-			fieldStrs = append(fieldStrs, fieldStr)
-		}
-
-		for _, s := range fieldStrs {
-			writer.add(s)
+			writer.add(b.renderField(fset, fl.List[i+k]))
 		}
 
 		if isGroupMatch && (i+fieldsToProcess < len(fl.List)) {
-			writer.forceBreak()
+			remainingLen := b.calculateRemainingParamsLength(fset, fl.List[i+fieldsToProcess:])
+			if !writer.canFitOnCurrentLine(remainingLen) {
+				writer.forceBreak()
+			}
 		}
 
 		i += fieldsToProcess
 	}
 
 	return writer.String(closeBracket)
+}
+
+// getFieldsToProcess determines how many fields to process together.
+// Returns the number of fields to process and whether they match a param group.
+func (b *Builder) getFieldsToProcess(fset *token.FileSet, list []*ast.Field, startIdx int) (int, bool) {
+	for _, group := range b.config.ParamGroups {
+		if b.matchesGroup(fset, list, startIdx, group) {
+			return len(group), true
+		}
+	}
+	return 1, false
+}
+
+// renderField renders a single field as a string (names + type).
+func (b *Builder) renderField(fset *token.FileSet, f *ast.Field) string {
+	var sb strings.Builder
+
+	names := field.RenderNames(f.Names)
+	if names != "" {
+		sb.WriteString(names)
+		sb.WriteString(" ")
+	}
+
+	sb.WriteString(b.renderer.Node(fset, f.Type))
+	return sb.String()
 }
 
 func (b *Builder) matchesGroup(fset *token.FileSet, list []*ast.Field, startIdx int, group []string) bool {
@@ -145,6 +146,22 @@ func (b *Builder) matchesGroup(fset *token.FileSet, list []*ast.Field, startIdx 
 	return true
 }
 
+// calculateRemainingParamsLength calculates the visual length of remaining parameters
+func (b *Builder) calculateRemainingParamsLength(fset *token.FileSet, fields []*ast.Field) int {
+	if len(fields) == 0 {
+		return 0
+	}
+
+	totalLen := 0
+	for i, field := range fields {
+		if i > 0 {
+			totalLen += 2 // ", "
+		}
+		totalLen += text.VisualLength(b.renderField(fset, field), b.config.TabWidth)
+	}
+	return totalLen
+}
+
 // builderLineWriter manages line wrapping and formatting for signatures.
 type builderLineWriter struct {
 	b             *Builder
@@ -160,7 +177,7 @@ func (b *Builder) newBuilderLineWriter(indent, openBracket string, initialVisLen
 	l := &builderLineWriter{
 		b:             b,
 		indent:        indent,
-		indentVisLen:  b.renderer.VisualLength(indent),
+		indentVisLen:  text.VisualLength(indent, b.config.TabWidth),
 		openBracket:   openBracket,
 		currentVisLen: initialVisLen,
 	}
@@ -168,8 +185,8 @@ func (b *Builder) newBuilderLineWriter(indent, openBracket string, initialVisLen
 	return l
 }
 
-func (lb *builderLineWriter) add(text string) {
-	textVisLen := lb.b.renderer.VisualLength(text)
+func (lb *builderLineWriter) add(s string) {
+	textVisLen := text.VisualLength(s, lb.b.config.TabWidth)
 	currentText := lb.currentLine.String()
 	needsComma := currentText != lb.openBracket && currentText != lb.indent
 
@@ -196,7 +213,7 @@ func (lb *builderLineWriter) add(text string) {
 		lb.currentVisLen += 2
 	}
 
-	lb.currentLine.WriteString(text)
+	lb.currentLine.WriteString(s)
 	lb.currentVisLen += textVisLen
 }
 
@@ -206,6 +223,12 @@ func (lb *builderLineWriter) forceBreak() {
 	lb.currentLine.Reset()
 	lb.currentLine.WriteString(lb.indent)
 	lb.currentVisLen = lb.indentVisLen
+}
+
+func (lb *builderLineWriter) canFitOnCurrentLine(additionalLength int) bool {
+	// Account for comma and space before the next parameter
+	potentialLen := lb.currentVisLen + 2 + additionalLength
+	return potentialLen <= lb.b.config.MaxLineLen
 }
 
 func (lb *builderLineWriter) String(closeBracket string) string {
