@@ -59,9 +59,11 @@ The linter analyzes:
 
 `sigfmt` is a plugin for `golangci-lint`. You need to build a custom version of `golangci-lint` that includes this plugin.
 
+### Option 1: Automatic (Recommended)
+
 1.  Create a `.custom-gcl.yml` file in your project root:
     ```yaml
-    version: v2.7.1 # Use your desired golangci-lint version
+    version: v1.64.6 # Use your desired golangci-lint version
     plugins:
       - module: 'github.com/vsfedorenko/sigfmt'
         version: v0.1.0 # Replace with the latest version
@@ -72,6 +74,14 @@ The linter analyzes:
     golangci-lint custom
     ```
     This will create a `custom-gcl` binary in your directory.
+
+### Option 2: Manual
+
+1.  Add a blank import of the module inside `cmd/golangci-lint/plugins.go` (or equivalent):
+    ```go
+    import _ "github.com/vsfedorenko/sigfmt"
+    ```
+2.  Run `go mod tidy` and `make build` to produce your custom `golangci-lint`.
 
 ## ⚙️ Configuration
 
@@ -144,27 +154,6 @@ type Logger interface {
 
 ## 📸 Examples Gallery
 
-<<<<<<< HEAD
-### API Handlers
-```diff
-- func CreateUser(
--     w http.ResponseWriter,
--     r *http.Request,
-- ) {
-+ func CreateUser(w http.ResponseWriter, r *http.Request) {
-      // ...
-  }
-
-- func UpdateUser(w http.ResponseWriter, r *http.Request, id string,
--     name string, email string) {
-+ func UpdateUser(w http.ResponseWriter, r *http.Request, id string, name string, email string) {
-      // ...
-  }
-||||||| parent of 18231b7 (Added more examples to README.md and added godoc comments to linter.go methods)
-func UpdateUser(w http.ResponseWriter, r *http.Request, id string, name string, email string) {
-    // ...
-}
-=======
 ### API Handlers
 ```diff
 - func CreateUser(
@@ -231,74 +220,8 @@ type Component struct {
 -     ) (Node, error)
 +     Render func(ctx context.Context, props Props) (Node, error)
 }
->>>>>>> 18231b7 (Added more examples to README.md and added godoc comments to linter.go methods)
 ```
 
-<<<<<<< HEAD
-### Service Interfaces
-```diff
-- type UserRepository interface {
--     Create(
--         ctx context.Context,
--         name string,
--         email string,
--     ) (*User, error)
--
--     Update(
--         ctx context.Context,
--         id int,
--         name string,
--         email string,
--     ) error
--
--     Delete(
--         ctx context.Context,
--         id int,
--     ) error
-- }
-+ type UserRepository interface {
-+     Create(ctx context.Context, name string, email string) (*User, error)
-+     Update(ctx context.Context, id int, name string, email string) error
-+     Delete(ctx context.Context, id int) error
-+ }
-```
-*(Reduced from 121 lines to 45 lines — 63% savings)*
-
-### Generics (Go 1.18+)
-```diff
-- func Map[T any, R any](
--     slice []T,
--     fn func(T) R,
-- ) []R {
-+ func Map[T any, R any](slice []T, fn func(T) R) []R {
-      // ...
-  }
-||||||| parent of 18231b7 (Added more examples to README.md and added godoc comments to linter.go methods)
-### Example 2: Service Interfaces
-
-**Before (121 lines for 8 methods):**
-```go
-type UserRepository interface {
-    Create(
-        ctx context.Context,
-        name string,
-        email string,
-    ) (*User, error)
-
-    Update(
-        ctx context.Context,
-        id int,
-        name string,
-        email string,
-    ) error
-
-    Delete(
-        ctx context.Context,
-        id int,
-    ) error
-    // ... 5 more methods
-}
-=======
 ### Anonymous Functions (Callbacks)
 ```diff
   group.Go(
@@ -309,48 +232,8 @@ type UserRepository interface {
           // ...
       },
   )
->>>>>>> 18231b7 (Added more examples to README.md and added godoc comments to linter.go methods)
 ```
 
-<<<<<<< HEAD
-### Struct Fields
-```diff
-type Component struct {
--     Render func(
--         ctx context.Context,
--         props Props,
--     ) (Node, error)
-+     Render func(ctx context.Context, props Props) (Node, error)
-}
-||||||| parent of 18231b7 (Added more examples to README.md and added godoc comments to linter.go methods)
-**After (45 lines for the same 8 methods - 63% savings):**
-```go
-type UserRepository interface {
-    Create(ctx context.Context, name string, email string) (*User, error)
-    Update(ctx context.Context, id int, name string, email string) error
-    Delete(ctx context.Context, id int) error
-    // ... 5 more methods
-}
-```
-
-### Example 3: Generics (Go 1.18+)
-
-**Before:**
-```go
-func Map[T any, R any](
-    slice []T,
-    fn func(T) R,
-) []R {
-    // ...
-}
-```
-
-**After:**
-```go
-func Map[T any, R any](slice []T, fn func(T) R) []R {
-    // ...
-}
-=======
 ### Complex Type Definitions
 ```diff
 - func Stream(
@@ -361,7 +244,6 @@ func Map[T any, R any](slice []T, fn func(T) R) []R {
 + func Stream(ctx context.Context, in <-chan Item, out chan<- Result) error {
       // ...
   }
->>>>>>> 18231b7 (Added more examples to README.md and added godoc comments to linter.go methods)
 ```
 
 ## ⚡ Performance
@@ -372,7 +254,7 @@ func Map[T any, R any](slice []T, fn func(T) R) []R {
 
 ## 🤔 FAQ
 
-**Why not use `gofmt` or `gofumpt`?**
+**Why not use `gofmt` or `gofumpt?**
 They provide basic formatting but lack strict rules for line length and parameter packing. `sigfmt` complements them.
 
 **Can parameter packing be disabled?**

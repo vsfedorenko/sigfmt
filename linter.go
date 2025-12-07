@@ -1,7 +1,7 @@
-// Package linters provides a golangci-lint plugin for formatting Go function signatures.
+// Package sigfmt provides a golangci-lint plugin for formatting Go function signatures.
 // It enforces consistent line breaking and parameter grouping rules to improve code readability
 // and reduce diff noise in version control systems.
-package linters
+package sigfmt
 
 import (
 	"bytes"
