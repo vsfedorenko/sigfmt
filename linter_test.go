@@ -13,11 +13,11 @@ import (
 )
 
 const (
-	goldenFileExt    = ".golden"
-	goldenFilePerms  = 0644
-	defaultLineLimit = 120
-	settingMaxLineLen = "max-line-len"
-	settingPackStructFields = "pack-struct-fields"
+	goldenFileExt               = ".golden"
+	goldenFilePerms             = 0644
+	defaultLineLimit            = 120
+	settingMaxLineLen           = "max-line-len"
+	settingPackStructFields     = "pack-struct-fields"
 	settingPackInterfaceMethods = "pack-interface-methods"
 )
 
