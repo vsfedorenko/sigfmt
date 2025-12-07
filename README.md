@@ -144,6 +144,27 @@ type Logger interface {
 
 ## 📸 Examples Gallery
 
+<<<<<<< HEAD
+### API Handlers
+```diff
+- func CreateUser(
+-     w http.ResponseWriter,
+-     r *http.Request,
+- ) {
++ func CreateUser(w http.ResponseWriter, r *http.Request) {
+      // ...
+  }
+
+- func UpdateUser(w http.ResponseWriter, r *http.Request, id string,
+-     name string, email string) {
++ func UpdateUser(w http.ResponseWriter, r *http.Request, id string, name string, email string) {
+      // ...
+  }
+||||||| parent of 18231b7 (Added more examples to README.md and added godoc comments to linter.go methods)
+func UpdateUser(w http.ResponseWriter, r *http.Request, id string, name string, email string) {
+    // ...
+}
+=======
 ### API Handlers
 ```diff
 - func CreateUser(
@@ -210,6 +231,137 @@ type Component struct {
 -     ) (Node, error)
 +     Render func(ctx context.Context, props Props) (Node, error)
 }
+>>>>>>> 18231b7 (Added more examples to README.md and added godoc comments to linter.go methods)
+```
+
+<<<<<<< HEAD
+### Service Interfaces
+```diff
+- type UserRepository interface {
+-     Create(
+-         ctx context.Context,
+-         name string,
+-         email string,
+-     ) (*User, error)
+-
+-     Update(
+-         ctx context.Context,
+-         id int,
+-         name string,
+-         email string,
+-     ) error
+-
+-     Delete(
+-         ctx context.Context,
+-         id int,
+-     ) error
+- }
++ type UserRepository interface {
++     Create(ctx context.Context, name string, email string) (*User, error)
++     Update(ctx context.Context, id int, name string, email string) error
++     Delete(ctx context.Context, id int) error
++ }
+```
+*(Reduced from 121 lines to 45 lines — 63% savings)*
+
+### Generics (Go 1.18+)
+```diff
+- func Map[T any, R any](
+-     slice []T,
+-     fn func(T) R,
+- ) []R {
++ func Map[T any, R any](slice []T, fn func(T) R) []R {
+      // ...
+  }
+||||||| parent of 18231b7 (Added more examples to README.md and added godoc comments to linter.go methods)
+### Example 2: Service Interfaces
+
+**Before (121 lines for 8 methods):**
+```go
+type UserRepository interface {
+    Create(
+        ctx context.Context,
+        name string,
+        email string,
+    ) (*User, error)
+
+    Update(
+        ctx context.Context,
+        id int,
+        name string,
+        email string,
+    ) error
+
+    Delete(
+        ctx context.Context,
+        id int,
+    ) error
+    // ... 5 more methods
+}
+=======
+### Anonymous Functions (Callbacks)
+```diff
+  group.Go(
+-     func(
+-         ctx context.Context,
+-     ) error {
++     func(ctx context.Context) error {
+          // ...
+      },
+  )
+>>>>>>> 18231b7 (Added more examples to README.md and added godoc comments to linter.go methods)
+```
+
+<<<<<<< HEAD
+### Struct Fields
+```diff
+type Component struct {
+-     Render func(
+-         ctx context.Context,
+-         props Props,
+-     ) (Node, error)
++     Render func(ctx context.Context, props Props) (Node, error)
+}
+||||||| parent of 18231b7 (Added more examples to README.md and added godoc comments to linter.go methods)
+**After (45 lines for the same 8 methods - 63% savings):**
+```go
+type UserRepository interface {
+    Create(ctx context.Context, name string, email string) (*User, error)
+    Update(ctx context.Context, id int, name string, email string) error
+    Delete(ctx context.Context, id int) error
+    // ... 5 more methods
+}
+```
+
+### Example 3: Generics (Go 1.18+)
+
+**Before:**
+```go
+func Map[T any, R any](
+    slice []T,
+    fn func(T) R,
+) []R {
+    // ...
+}
+```
+
+**After:**
+```go
+func Map[T any, R any](slice []T, fn func(T) R) []R {
+    // ...
+}
+=======
+### Complex Type Definitions
+```diff
+- func Stream(
+-     ctx context.Context,
+-     in <-chan Item,
+-     out chan<- Result,
+- ) error {
++ func Stream(ctx context.Context, in <-chan Item, out chan<- Result) error {
+      // ...
+  }
+>>>>>>> 18231b7 (Added more examples to README.md and added godoc comments to linter.go methods)
 ```
 
 ## ⚡ Performance

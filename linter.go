@@ -1,4 +1,6 @@
 // Package linters provides a golangci-lint plugin for formatting Go function signatures.
+// It enforces consistent line breaking and parameter grouping rules to improve code readability
+// and reduce diff noise in version control systems.
 package linters
 
 import (
@@ -13,16 +15,19 @@ import (
 )
 
 const (
-	defaultMaxLineLen         = 120
-	defaultTabWidth           = 8
-	analyzerName              = "sigfmt"
-	analyzerDoc               = "Checks if multi-line function signatures can be collapsed to one line or reformatted more compactly"
+	// defaultMaxLineLen is the default maximum line length allowed before wrapping is suggested.
+	defaultMaxLineLen = 120
+	// defaultTabWidth is the default number of spaces a tab character represents for length calculation.
+	defaultTabWidth = 8
+	analyzerName    = "sigfmt"
+	analyzerDoc     = "Checks if multi-line function signatures can be collapsed to one line or reformatted more compactly"
+
 	diagnosticMessage         = "Multi-line signature can be collapsed to one line"
 	diagnosticMessageReformat = "Signature can be reformatted more compactly"
 	fixMessage                = "Collapse to one line"
 	fixMessageReformat        = "Reformat with grouped parameters"
 
-	// Action types for signature formatting
+	// Action types for signature formatting decision logic.
 	actionCollapse = "collapse"
 	actionReformat = "reformat"
 )
@@ -31,34 +36,44 @@ func init() {
 	register.Plugin(analyzerName, New)
 }
 
-// Settings contains linter configuration
+// Settings contains configuration parameters for the linter.
+// These settings are populated from the .golangci.yml configuration file.
 type Settings struct {
-	MaxLineLen           int
-	TabWidth             int
-	PackStructFields     bool
+	// MaxLineLen is the maximum allowed length of a line (including indentation).
+	MaxLineLen int
+	// TabWidth is the visual width of a tab character used for length calculations.
+	TabWidth int
+	// PackStructFields enables aggressive packing of function types within structs.
+	// If true, multiple parameters will be placed on the same line if they fit.
+	PackStructFields bool
+	// PackInterfaceMethods enables aggressive packing of method signatures within interfaces.
+	// If true, multiple parameters will be placed on the same line if they fit.
 	PackInterfaceMethods bool
 }
 
-// PluginLineWrap implements register.LinterPlugin interface.
+// PluginLineWrap implements the register.LinterPlugin interface.
+// It holds the configuration state for the analyzer instance.
 type PluginLineWrap struct {
 	settings Settings
 }
 
-// signatureInfo contains signature information for checking
+// signatureInfo contains detailed metadata about a function signature being analyzed.
+// It stores both the original AST information and the calculated reformatted text.
 type signatureInfo struct {
-	start             token.Pos      // start of replacement
-	end               token.Pos      // end of replacement
-	diagPos           token.Pos      // position for diagnostic
-	oneLineText       string         // text of one-line version
-	reformattedText   string         // text of improved multi-line version (if doesn't fit on one line)
-	funcType          *ast.FuncType  // function type for generating formatted version
-	receiver          *ast.FieldList // receiver for methods (can be nil)
-	name              string         // function/method name
-	isStructField     bool           // true if this is a struct field with func type
-	isInterfaceMethod bool           // true if this is an interface method
+	start             token.Pos      // The starting position of the signature (e.g., 'func' keyword or function name).
+	end               token.Pos      // The ending position of the signature (usually the closing brace or return type).
+	diagPos           token.Pos      // The position where the diagnostic message should be reported.
+	oneLineText       string         // The generated text representation of the signature if collapsed to a single line.
+	reformattedText   string         // The generated text representation of the signature if reformatted/packed (multi-line).
+	funcType          *ast.FuncType  // The underlying AST node for the function type.
+	receiver          *ast.FieldList // The receiver field list (nil for functions, non-nil for methods).
+	name              string         // The name of the function or method.
+	isStructField     bool           // Indicates if this signature belongs to a struct field.
+	isInterfaceMethod bool           // Indicates if this signature belongs to an interface method.
 }
 
-// New returns a new instance of the sigfmt linter plugin.
+// New returns a new instance of the sigfmt linter plugin with the provided settings.
+// It parses the raw settings map and applies default values where necessary.
 func New(settings any) (register.LinterPlugin, error) {
 	p := &PluginLineWrap{}
 	// Set defaults
@@ -67,6 +82,7 @@ func New(settings any) (register.LinterPlugin, error) {
 	p.settings.PackStructFields = true
 	p.settings.PackInterfaceMethods = true
 
+	// Parse settings from the generic map
 	if s, ok := settings.(map[string]interface{}); ok {
 		if v, ok := s["max-line-len"].(float64); ok && v > 0 {
 			p.settings.MaxLineLen = int(v)
@@ -84,7 +100,8 @@ func New(settings any) (register.LinterPlugin, error) {
 	return p, nil
 }
 
-// BuildAnalyzers returns the analysis.Analyzer for the sigfmt plugin.
+// BuildAnalyzers returns the analysis.Analyzer definition for the sigfmt plugin.
+// This is the entry point used by golangci-lint to register the analyzer.
 func (p *PluginLineWrap) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	return []*analysis.Analyzer{{
 		Name: analyzerName,
@@ -93,11 +110,15 @@ func (p *PluginLineWrap) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	}}, nil
 }
 
-// GetLoadMode returns the LoadMode for the analyzer.
+// GetLoadMode returns the LoadMode required for the analyzer.
+// This linter only requires syntax information (AST), not full type checking,
+// making it significantly faster.
 func (p *PluginLineWrap) GetLoadMode() string {
 	return register.LoadModeSyntax
 }
 
+// run executes the analysis pass on the package files.
+// It iterates through all files and inspects relevant AST nodes (FuncDecl, FuncLit, TypeSpec).
 func (p *PluginLineWrap) run(pass *analysis.Pass) (any, error) {
 	for _, f := range pass.Files {
 		ast.Inspect(f, func(n ast.Node) bool {
@@ -107,6 +128,7 @@ func (p *PluginLineWrap) run(pass *analysis.Pass) (any, error) {
 			case *ast.FuncLit:
 				p.checkFuncLit(pass, x)
 			case *ast.TypeSpec:
+				// Handle interfaces and structs
 				if iface, ok := x.Type.(*ast.InterfaceType); ok {
 					p.checkInterface(pass, iface)
 				}
@@ -120,6 +142,8 @@ func (p *PluginLineWrap) run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
+// checkFuncDecl inspects a top-level function declaration.
+// It validates regular functions and methods attached to types.
 func (p *PluginLineWrap) checkFuncDecl(pass *analysis.Pass, decl *ast.FuncDecl) {
 	if decl.Type == nil || decl.Type.Params == nil {
 		return
@@ -136,6 +160,8 @@ func (p *PluginLineWrap) checkFuncDecl(pass *analysis.Pass, decl *ast.FuncDecl) 
 	}
 }
 
+// checkFuncLit inspects an anonymous function literal (closure).
+// Example: var f = func(a int) { ... }
 func (p *PluginLineWrap) checkFuncLit(pass *analysis.Pass, lit *ast.FuncLit) {
 	if lit.Type == nil || lit.Type.Params == nil {
 		return
@@ -152,12 +178,14 @@ func (p *PluginLineWrap) checkFuncLit(pass *analysis.Pass, lit *ast.FuncLit) {
 	}
 }
 
+// checkInterface inspects method signatures defined within an interface.
 func (p *PluginLineWrap) checkInterface(pass *analysis.Pass, iface *ast.InterfaceType) {
 	if iface.Methods == nil {
 		return
 	}
 
 	for _, m := range iface.Methods.List {
+		// Skip embedded interfaces or erroneous nodes without names
 		if len(m.Names) == 0 {
 			continue
 		}
@@ -179,6 +207,8 @@ func (p *PluginLineWrap) checkInterface(pass *analysis.Pass, iface *ast.Interfac
 	}
 }
 
+// checkStruct inspects function type fields defined within a struct.
+// Example: type Handler struct { Handle func(ctx context.Context) error }
 func (p *PluginLineWrap) checkStruct(pass *analysis.Pass, structType *ast.StructType) {
 	if structType.Fields == nil {
 		return
@@ -190,7 +220,7 @@ func (p *PluginLineWrap) checkStruct(pass *analysis.Pass, structType *ast.Struct
 			continue
 		}
 
-		// Struct fields can be unnamed (anonymous), skip them
+		// Struct fields can be unnamed (anonymous embedding), skip them as they act as mixins
 		if len(field.Names) == 0 {
 			continue
 		}
@@ -207,26 +237,28 @@ func (p *PluginLineWrap) checkStruct(pass *analysis.Pass, structType *ast.Struct
 	}
 }
 
-// checkSignature checks if signature formatting needs to be changed.
-// Returns actionCollapse if needs to be collapsed to one line,
-// actionReformat if multi-line formatting needs improvement,
-// or "" if no changes are required
+// checkSignature is the core logic that determines if a signature needs formatting changes.
+//
+// Returns:
+//   - actionCollapse: if the signature should be collapsed to one line.
+//   - actionReformat: if the signature should remain multi-line but needs better packing.
+//   - "": if no changes are required.
 func (p *PluginLineWrap) checkSignature(pass *analysis.Pass, sig *signatureInfo) string {
 	fset := pass.Fset
 	startLine := fset.Position(sig.start).Line
 	endLine := fset.Position(sig.end).Line
 
-	// If one-line version of signature fits in MaxLineLen
+	// 1. Check if the signature can fit on a single line
 	if p.visualLength(sig.oneLineText) <= p.settings.MaxLineLen {
-		// If signature is currently multi-line but fits on one, suggest collapsing
+		// If it fits, and it is currently split across multiple lines, suggest collapsing.
 		if startLine != endLine {
 			return actionCollapse
 		}
-		// Otherwise (already on one line and fits), do nothing
+		// If it fits and is already on one line, it is correct.
 		return ""
 	}
 
-	// If doesn't fit on one line, check if formatting can be improved
+	// 2. If it doesn't fit on one line, check if the multi-line formatting can be improved.
 	if p.shouldReformat(pass.Fset, sig) {
 		sig.reformattedText = p.buildReformattedSignature(pass.Fset, sig)
 		return actionReformat
@@ -235,7 +267,8 @@ func (p *PluginLineWrap) checkSignature(pass *analysis.Pass, sig *signatureInfo)
 	return ""
 }
 
-// visualLength calculates visual length of string considering tabs
+// visualLength calculates the visual length of a string, accounting for tab expansion.
+// This ensures that the linter respects the user's editor settings for tab width.
 func (p *PluginLineWrap) visualLength(s string) int {
 	length := 0
 	for _, c := range s {
@@ -248,14 +281,17 @@ func (p *PluginLineWrap) visualLength(s string) int {
 	return length
 }
 
-// shouldReformat checks if multi-line signature needs reformatting.
-// Returns true if signature can be packed more compactly.
+// shouldReformat determines if a multi-line signature is eligible for reformatting (packing).
+//
+// Reformatting is suggested if:
+//   - It's an interface method or struct field (and packing is enabled).
+//   - It's a regular function where parameters are not cleanly split one-per-line.
 func (p *PluginLineWrap) shouldReformat(fset *token.FileSet, sig *signatureInfo) bool {
 	if sig.funcType == nil || sig.funcType.Params == nil {
 		return false
 	}
 
-	// Don't reformat single-line signatures
+	// Don't reformat single-line signatures (handled by collapse logic)
 	if fset.Position(sig.start).Line == fset.Position(sig.end).Line {
 		return false
 	}
@@ -265,8 +301,8 @@ func (p *PluginLineWrap) shouldReformat(fset *token.FileSet, sig *signatureInfo)
 		return false
 	}
 
-	// For interface methods and struct fields, apply aggressive formatting
-	// (parameter packing) if enabled in settings
+	// Strategy: Aggressive packing for definition types (Interfaces, Structs)
+	// These often contain many small signatures where vertical space is premium.
 	if sig.isInterfaceMethod && p.settings.PackInterfaceMethods {
 		return true
 	}
@@ -274,12 +310,14 @@ func (p *PluginLineWrap) shouldReformat(fset *token.FileSet, sig *signatureInfo)
 		return true
 	}
 
-	// For regular functions: reformat only if parameters are NOT on separate lines
-	// (i.e. if they're already neatly split line by line, leave as is)
+	// Strategy: Conservative packing for Implementations (Funcs, Methods)
+	// We only interfere if the user has a "mixed" style (e.g. some args on same line, some on new).
+	// If the user has explicitly placed every arg on a new line, we respect that choice.
 	return !p.areParamsOnSeparateLines(fset, params)
 }
 
-// areParamsOnSeparateLines checks if each parameter is on a separate line
+// areParamsOnSeparateLines checks if every parameter in the list starts on a new line.
+// This is used to detect the "staircase" or "one-arg-per-line" style.
 func (p *PluginLineWrap) areParamsOnSeparateLines(fset *token.FileSet, params []*ast.Field) bool {
 	if len(params) <= 1 {
 		return true
@@ -289,6 +327,7 @@ func (p *PluginLineWrap) areParamsOnSeparateLines(fset *token.FileSet, params []
 	for i := 1; i < len(params); i++ {
 		currentLine := fset.Position(params[i].Pos()).Line
 		if currentLine == prevLine {
+			// Found two parameters on the same line
 			return false
 		}
 		prevLine = currentLine
@@ -296,7 +335,8 @@ func (p *PluginLineWrap) areParamsOnSeparateLines(fset *token.FileSet, params []
 	return true
 }
 
-// buildReformattedSignature generates improved multi-line formatting
+// buildReformattedSignature generates the source code for a multi-line signature
+// with optimized parameter packing (grouping multiple parameters on a line if they fit).
 func (p *PluginLineWrap) buildReformattedSignature(fset *token.FileSet, sig *signatureInfo) string {
 	if sig.funcType == nil {
 		return ""
@@ -304,7 +344,7 @@ func (p *PluginLineWrap) buildReformattedSignature(fset *token.FileSet, sig *sig
 
 	var sb strings.Builder
 
-	// Prefix (func, name, receiver, etc.)
+	// 1. Build the prefix (everything before the parameters)
 	switch {
 	case sig.isStructField:
 		sb.WriteString(sig.name)
@@ -322,15 +362,15 @@ func (p *PluginLineWrap) buildReformattedSignature(fset *token.FileSet, sig *sig
 		}
 	}
 
-	// Type parameters (generics)
+	// 2. Handle Type Parameters (Generics) - e.g. [T any]
 	if sig.funcType.TypeParams != nil {
 		sb.WriteString(p.renderFieldList(fset, sig.funcType.TypeParams, "[", "]"))
 	}
 
-	// Group parameters
+	// 3. Build the grouped parameter list
 	sb.WriteString(p.renderFieldListGrouped(fset, sig.funcType.Params, sig, "(", ")"))
 
-	// Results
+	// 4. Append Return Results
 	if sig.funcType.Results != nil {
 		sb.WriteString(p.renderResults(fset, sig.funcType.Results))
 	}
@@ -338,28 +378,31 @@ func (p *PluginLineWrap) buildReformattedSignature(fset *token.FileSet, sig *sig
 	return sb.String()
 }
 
-// renderFieldListGrouped renders parameters with grouping by lines
+// renderFieldListGrouped renders a list of fields (parameters), automatically grouping them
+// onto lines based on the MaxLineLen setting.
 func (p *PluginLineWrap) renderFieldListGrouped(fset *token.FileSet, fl *ast.FieldList, sig *signatureInfo, openBracket, closeBracket string) string {
 	if fl == nil || len(fl.List) == 0 {
 		return openBracket + closeBracket
 	}
 
-	// Calculate prefix (how much space the beginning of the line takes)
+	// Calculate the available space on the first line after the function declaration prefix.
 	prefixLen := len(sig.oneLineText) - len(p.renderFieldList(fset, fl, openBracket, closeBracket))
 	if sig.funcType.Results != nil {
 		prefixLen -= len(p.renderResults(fset, sig.funcType.Results))
 	}
 
-	// Get indent for continuation lines
-	indent := "\t" // Standard Go indentation
+	// Standard Go indentation for continuation lines
+	indent := "\t"
 
 	var lines []string
 	var currentLine strings.Builder
 	currentLine.WriteString(openBracket)
+
+	// Track the current visual length of the line being built
 	currentLineLen := prefixLen + 1 // +1 for opening bracket
 
 	for i, field := range fl.List {
-		// Render current field
+		// Render the individual field (e.g., "ctx context.Context" or "a, b int")
 		var fieldStr string
 		for j, name := range field.Names {
 			if j > 0 {
@@ -372,23 +415,25 @@ func (p *PluginLineWrap) renderFieldListGrouped(fset *token.FileSet, fl *ast.Fie
 		}
 		fieldStr += p.renderNode(fset, field.Type)
 
-		// Check if field fits on current line
+		// Calculate length if we add this field to the current line
 		testLen := currentLineLen
 		if currentLine.Len() > len(openBracket) {
-			testLen += 2 // for ", "
+			testLen += 2 // for ", " separator
 		}
 		testLen += len(fieldStr)
 
-		// If not first parameter and doesn't fit, start new line
+		// Logic: If it's not the first param and adding it exceeds the limit, wrap to new line.
 		if i > 0 && testLen > p.settings.MaxLineLen && currentLine.Len() > len(openBracket) {
-			currentLine.WriteString(",")
+			currentLine.WriteString(",") // Add comma to previous line
 			lines = append(lines, currentLine.String())
+
+			// Start new line
 			currentLine.Reset()
 			currentLine.WriteString(indent)
 			currentLine.WriteString(fieldStr)
 			currentLineLen = p.settings.TabWidth + len(fieldStr)
 		} else {
-			// Add to current line
+			// Append to current line
 			if currentLine.Len() > len(openBracket) {
 				currentLine.WriteString(", ")
 			}
@@ -397,14 +442,15 @@ func (p *PluginLineWrap) renderFieldListGrouped(fset *token.FileSet, fl *ast.Fie
 		}
 	}
 
-	// Add closing bracket on same line as last parameter
+	// Add closing bracket to the last line
 	currentLine.WriteString(closeBracket)
 	lines = append(lines, currentLine.String())
 
 	return strings.Join(lines, "\n")
 }
 
-// computeDiagPos calculates position for diagnostic (closing bracket of params or results)
+// computeDiagPos calculates the best position to place the diagnostic warning.
+// It prefers the closing bracket of the parameters or results to avoid visual clutter.
 func computeDiagPos(params, results *ast.FieldList) token.Pos {
 	diagPos := params.Closing
 	if results != nil && results.Closing.IsValid() {
@@ -413,7 +459,7 @@ func computeDiagPos(params, results *ast.FieldList) token.Pos {
 	return diagPos
 }
 
-// extractFuncDeclSignature extracts function signature information
+// extractFuncDeclSignature extracts relevant information from a *ast.FuncDecl.
 func (p *PluginLineWrap) extractFuncDeclSignature(fset *token.FileSet, decl *ast.FuncDecl) *signatureInfo {
 	start := decl.Type.Func
 	end := decl.Type.Params.End()
@@ -437,7 +483,7 @@ func (p *PluginLineWrap) extractFuncDeclSignature(fset *token.FileSet, decl *ast
 	}
 }
 
-// extractFuncLitSignature extracts function literal signature information
+// extractFuncLitSignature extracts relevant information from a *ast.FuncLit (anonymous function).
 func (p *PluginLineWrap) extractFuncLitSignature(fset *token.FileSet, lit *ast.FuncLit) *signatureInfo {
 	start := lit.Type.Func
 	end := lit.Type.Params.End()
@@ -461,7 +507,7 @@ func (p *PluginLineWrap) extractFuncLitSignature(fset *token.FileSet, lit *ast.F
 	}
 }
 
-// extractMethodSignature extracts interface method signature information
+// extractMethodSignature extracts relevant information from an interface method definition.
 func (p *PluginLineWrap) extractMethodSignature(fset *token.FileSet, name *ast.Ident, ft *ast.FuncType) *signatureInfo {
 	start := name.Pos()
 	end := ft.Params.End()
@@ -486,7 +532,7 @@ func (p *PluginLineWrap) extractMethodSignature(fset *token.FileSet, name *ast.I
 	}
 }
 
-// extractStructFieldSignature extracts struct field signature information (func type)
+// extractStructFieldSignature extracts relevant information from a struct field with a function type.
 func (p *PluginLineWrap) extractStructFieldSignature(fset *token.FileSet, name *ast.Ident, ft *ast.FuncType) *signatureInfo {
 	start := name.Pos()
 	end := ft.Params.End()
@@ -510,7 +556,7 @@ func (p *PluginLineWrap) extractStructFieldSignature(fset *token.FileSet, name *
 	}
 }
 
-// buildSignature - universal function for building one-line signatures
+// buildSignature is a helper to construct the one-line string representation of any function type.
 func (p *PluginLineWrap) buildSignature(fset *token.FileSet, prefix string, ft *ast.FuncType, results *ast.FieldList) string {
 	var sb strings.Builder
 	sb.WriteString(prefix)
@@ -531,7 +577,7 @@ func (p *PluginLineWrap) buildSignature(fset *token.FileSet, prefix string, ft *
 	return sb.String()
 }
 
-// buildFuncDeclSignature builds one-line version of function signature
+// buildFuncDeclSignature reconstructs the signature of a function declaration.
 func (p *PluginLineWrap) buildFuncDeclSignature(fset *token.FileSet, decl *ast.FuncDecl) string {
 	var prefix strings.Builder
 	prefix.WriteString("func ")
@@ -545,43 +591,45 @@ func (p *PluginLineWrap) buildFuncDeclSignature(fset *token.FileSet, decl *ast.F
 	return p.buildSignature(fset, prefix.String(), decl.Type, decl.Type.Results)
 }
 
-// buildFuncLitSignature builds one-line version of function literal signature
+// buildFuncLitSignature reconstructs the signature of an anonymous function.
 func (p *PluginLineWrap) buildFuncLitSignature(fset *token.FileSet, ft *ast.FuncType) string {
 	return p.buildSignature(fset, "func", ft, ft.Results)
 }
 
-// buildMethodSignature builds one-line version of method signature
+// buildMethodSignature reconstructs the signature of an interface method.
 func (p *PluginLineWrap) buildMethodSignature(fset *token.FileSet, name string, ft *ast.FuncType) string {
 	return p.buildSignature(fset, name, ft, ft.Results)
 }
 
-// buildStructFieldSignature builds one-line version of struct field with func type
+// buildStructFieldSignature reconstructs the signature of a struct field function.
 func (p *PluginLineWrap) buildStructFieldSignature(fset *token.FileSet, name string, ft *ast.FuncType) string {
 	return p.buildSignature(fset, name+" func", ft, ft.Results)
 }
 
-// renderResults renders return values
+// renderResults converts the results list (return values) to a string.
+// It handles cases with and without parentheses (e.g. `error` vs `(int, error)`).
 func (p *PluginLineWrap) renderResults(fset *token.FileSet, results *ast.FieldList) string {
 	if results == nil || len(results.List) == 0 {
 		return ""
 	}
 
-	// If single result without name, don't wrap in parentheses
+	// Special case: Single unnamed result doesn't need parentheses
+	// e.g. "func Foo() int" vs "func Foo() (int, error)"
 	if len(results.List) == 1 && len(results.List[0].Names) == 0 {
 		return " " + p.renderNode(fset, results.List[0].Type)
 	}
 
-	// Otherwise wrap in parentheses
 	return " " + p.renderFieldList(fset, results, "(", ")")
 }
 
-// renderNode renders AST node to string
+// renderNode converts an AST node to its string representation.
+// It uses a custom approach for whitespace collapsing to ensure consistent output.
 func (p *PluginLineWrap) renderNode(fset *token.FileSet, n ast.Node) string {
 	if n == nil {
 		return ""
 	}
 
-	// Special handling for FieldList
+	// Optimization: Direct dispatch for FieldList to avoid printer overhead
 	if fl, ok := n.(*ast.FieldList); ok {
 		return p.renderFieldList(fset, fl, "(", ")")
 	}
@@ -591,11 +639,12 @@ func (p *PluginLineWrap) renderNode(fset *token.FileSet, n ast.Node) string {
 		return ""
 	}
 
-	// Collapse all spaces and newlines into single space
+	// Normalize whitespace: collapse all sequences of whitespace/newlines into a single space
 	return strings.Join(strings.Fields(buf.String()), " ")
 }
 
-// renderFieldList renders field list with given brackets
+// renderFieldList converts a list of fields (parameters, results, generics) to a comma-separated string.
+// It adds the specified opening and closing brackets.
 func (p *PluginLineWrap) renderFieldList(fset *token.FileSet, fl *ast.FieldList, openBracket, closeBracket string) string {
 	if fl == nil || len(fl.List) == 0 {
 		return openBracket + closeBracket
@@ -609,7 +658,7 @@ func (p *PluginLineWrap) renderFieldList(fset *token.FileSet, fl *ast.FieldList,
 			sb.WriteString(", ")
 		}
 
-		// Render field names
+		// Render parameter names (e.g. "a, b" in "a, b int")
 		for j, name := range field.Names {
 			if j > 0 {
 				sb.WriteString(", ")
@@ -617,12 +666,11 @@ func (p *PluginLineWrap) renderFieldList(fset *token.FileSet, fl *ast.FieldList,
 			sb.WriteString(name.Name)
 		}
 
-		// If there are names, add space before type
+		// Add space between names and type if names exist
 		if len(field.Names) > 0 {
 			sb.WriteString(" ")
 		}
 
-		// Render type
 		sb.WriteString(p.renderNode(fset, field.Type))
 	}
 
@@ -630,7 +678,7 @@ func (p *PluginLineWrap) renderFieldList(fset *token.FileSet, fl *ast.FieldList,
 	return sb.String()
 }
 
-// report reports found issue with suggested fix
+// report sends the diagnostic and suggested fix to the analysis pass.
 func (p *PluginLineWrap) report(pass *analysis.Pass, sig *signatureInfo, action string) {
 	var message, fixMsg string
 	var newText []byte
