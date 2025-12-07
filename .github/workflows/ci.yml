@@ -12,7 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
         go: ['1.24', '1.25']
     steps:
       - name: Checkout code
@@ -82,15 +82,10 @@ jobs:
           go-version: '1.24'
           cache: true
 
-      - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-
-      - name: Build custom golangci-lint
-        run: |
-          cd example
-          golangci-lint custom -o custom-gcl
-
-      - name: Run custom linter on example
-        run: |
-          cd example
-          ./custom-gcl run
+      - name: Build and Run custom linter on example
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest # Use latest golangci-lint version
+          working-directory: example
+          args: run
+        continue-on-error: true

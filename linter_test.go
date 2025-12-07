@@ -14,7 +14,7 @@ import (
 
 const (
 	goldenFileExt               = ".golden"
-	goldenFilePerms             = 0644
+	goldenFilePerms             = 0o644
 	defaultLineLimit            = 120
 	settingMaxLineLen           = "max-line-len"
 	settingPackStructFields     = "pack-struct-fields"

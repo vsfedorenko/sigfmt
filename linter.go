@@ -1,3 +1,4 @@
+// Package linters provides a golangci-lint plugin for formatting Go function signatures.
 package linters
 
 import (
@@ -38,6 +39,7 @@ type Settings struct {
 	PackInterfaceMethods bool
 }
 
+// PluginLineWrap implements register.LinterPlugin interface.
 type PluginLineWrap struct {
 	settings Settings
 }
@@ -56,6 +58,7 @@ type signatureInfo struct {
 	isInterfaceMethod bool           // true if this is an interface method
 }
 
+// New returns a new instance of the sigfmt linter plugin.
 func New(settings any) (register.LinterPlugin, error) {
 	p := &PluginLineWrap{}
 	// Set defaults
@@ -81,6 +84,7 @@ func New(settings any) (register.LinterPlugin, error) {
 	return p, nil
 }
 
+// BuildAnalyzers returns the analysis.Analyzer for the sigfmt plugin.
 func (p *PluginLineWrap) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	return []*analysis.Analyzer{{
 		Name: analyzerName,
@@ -89,6 +93,7 @@ func (p *PluginLineWrap) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	}}, nil
 }
 
+// GetLoadMode returns the LoadMode for the analyzer.
 func (p *PluginLineWrap) GetLoadMode() string {
 	return register.LoadModeSyntax
 }
@@ -300,12 +305,13 @@ func (p *PluginLineWrap) buildReformattedSignature(fset *token.FileSet, sig *sig
 	var sb strings.Builder
 
 	// Prefix (func, name, receiver, etc.)
-	if sig.isStructField {
+	switch {
+	case sig.isStructField:
 		sb.WriteString(sig.name)
 		sb.WriteString(" func")
-	} else if sig.isInterfaceMethod {
+	case sig.isInterfaceMethod:
 		sb.WriteString(sig.name)
-	} else {
+	default:
 		sb.WriteString("func ")
 		if sig.receiver != nil {
 			sb.WriteString(p.renderFieldList(fset, sig.receiver, "(", ")"))
@@ -399,7 +405,7 @@ func (p *PluginLineWrap) renderFieldListGrouped(fset *token.FileSet, fl *ast.Fie
 }
 
 // computeDiagPos calculates position for diagnostic (closing bracket of params or results)
-func computeDiagPos(params *ast.FieldList, results *ast.FieldList) token.Pos {
+func computeDiagPos(params, results *ast.FieldList) token.Pos {
 	diagPos := params.Closing
 	if results != nil && results.Closing.IsValid() {
 		diagPos = results.Closing
