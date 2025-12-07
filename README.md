@@ -1,6 +1,10 @@
 # sigfmt — Linter for Go Function Signatures
 
 [![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.18-blue)](https://golang.org/dl/)
+[![CI](https://github.com/vsfedorenko/sigfmt/actions/workflows/ci.yml/badge.svg)](https://github.com/vsfedorenko/sigfmt/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/vsfedorenko/sigfmt/branch/main/graph/badge.svg)](https://codecov.io/gh/vsfedorenko/sigfmt)
+[![Go Report Card](https://goreportcard.com/badge/github.com/vsfedorenko/sigfmt)](https://goreportcard.com/report/github.com/vsfedorenko/sigfmt)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 `sigfmt` is a powerful linter plugin for `golangci-lint` designed for automatic checking and formatting of function, method, and field function signatures in Go.
 

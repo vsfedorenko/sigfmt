@@ -6,7 +6,8 @@ package length80
 func BlankShort(
 	_ int,
 	_ string,
-) {} // want "Multi-line signature can be collapsed to one line"
+) { // want "Multi-line signature can be collapsed to one line"
+}
 
 // MethodWithBlanksInterface checks blank identifiers in interface.
 type MethodWithBlanksInterface interface {
