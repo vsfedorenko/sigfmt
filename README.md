@@ -59,11 +59,9 @@ The linter analyzes:
 
 `sigfmt` is a plugin for `golangci-lint`. You need to build a custom version of `golangci-lint` that includes this plugin.
 
-### Option 1: Automatic (Recommended)
-
 1.  Create a `.custom-gcl.yml` file in your project root:
     ```yaml
-    version: v1.64.6 # Use your desired golangci-lint version
+    version: v2.7.1 # Use your desired golangci-lint version
     plugins:
       - module: 'github.com/vsfedorenko/sigfmt'
         version: v0.1.0 # Replace with the latest version
@@ -74,14 +72,6 @@ The linter analyzes:
     golangci-lint custom
     ```
     This will create a `custom-gcl` binary in your directory.
-
-### Option 2: Manual
-
-1.  Add a blank import of the module inside `cmd/golangci-lint/plugins.go` (or equivalent):
-    ```go
-    import _ "github.com/vsfedorenko/sigfmt"
-    ```
-2.  Run `go mod tidy` and `make build` to produce your custom `golangci-lint`.
 
 ## ⚙️ Configuration
 
