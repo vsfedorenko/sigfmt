@@ -64,7 +64,7 @@ jobs:
           fi
 
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
           version: latest
           args: --timeout=5m
@@ -85,7 +85,7 @@ jobs:
       - name: Build and Run custom linter on example
         uses: golangci/golangci-lint-action@v9
         with:
-          version: latest # Use latest golangci-lint version
+          version: latest
           working-directory: example
-          args: run
+          args: --timeout=5m
         continue-on-error: true

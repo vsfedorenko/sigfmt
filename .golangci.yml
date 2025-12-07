@@ -1,1 +1,4 @@
 # golangci-lint configuration file
+
+version: "2"
+
