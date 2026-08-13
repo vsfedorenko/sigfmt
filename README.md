@@ -1,5 +1,7 @@
 # sigfmt — Linter for Go Function Signatures
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/vsfedorenko/sigfmt.svg)](https://pkg.go.dev/github.com/vsfedorenko/sigfmt)
+[![GitHub Release](https://img.shields.io/github/v/release/vsfedorenko/sigfmt)](https://github.com/vsfedorenko/sigfmt/releases)
 [![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.24-blue)](https://golang.org/dl/)
 [![CI](https://github.com/vsfedorenko/sigfmt/actions/workflows/ci.yml/badge.svg)](https://github.com/vsfedorenko/sigfmt/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/vsfedorenko/sigfmt/branch/main/graph/badge.svg)](https://codecov.io/gh/vsfedorenko/sigfmt)
