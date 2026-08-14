@@ -2,6 +2,7 @@ package sigfmt
 
 import (
 	"flag"
+	"strings"
 
 	"golang.org/x/tools/go/analysis"
 
@@ -24,6 +25,7 @@ func NewAnalyzer() *analysis.Analyzer {
 		tabWidth             int
 		packStructFields     bool
 		packInterfaceMethods bool
+		paramGroupsStr       string
 	)
 
 	flags := flag.NewFlagSet(analyzerName, flag.ExitOnError)
@@ -35,6 +37,8 @@ func NewAnalyzer() *analysis.Analyzer {
 		"aggressively pack function-type struct fields")
 	flags.BoolVar(&packInterfaceMethods, "pack-interface-methods", config.DefaultPackInterfaceMethods,
 		"aggressively pack method signatures in interfaces")
+	flags.StringVar(&paramGroupsStr, "param-groups", "",
+		"semicolon-separated parameter type groups; each group is a comma-separated list of type names (e.g. 'context.Context,error;io.Reader,io.Writer')")
 
 	return &analysis.Analyzer{
 		Name:  analyzerName,
@@ -46,9 +50,39 @@ func NewAnalyzer() *analysis.Analyzer {
 				TabWidth:             tabWidth,
 				PackStructFields:     packStructFields,
 				PackInterfaceMethods: packInterfaceMethods,
+				ParamGroups:          parseParamGroupsFlag(paramGroupsStr),
 			}
 			plugin := &PluginLineWrap{settings: settings}
 			return plugin.run(pass)
 		},
 	}
+}
+
+// parseParamGroupsFlag parses a CLI string like
+// "context.Context,error;io.Reader,io.Writer" into [][]string.
+// An empty string produces nil (no groups).
+func parseParamGroupsFlag(s string) [][]string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+
+	var result [][]string
+	for _, group := range strings.Split(s, ";") {
+		group = strings.TrimSpace(group)
+		if group == "" {
+			continue
+		}
+		var types []string
+		for _, t := range strings.Split(group, ",") {
+			t = strings.TrimSpace(t)
+			if t != "" {
+				types = append(types, t)
+			}
+		}
+		if len(types) > 0 {
+			result = append(result, types)
+		}
+	}
+	return result
 }

@@ -120,6 +120,8 @@ linters-settings:
 
 ## 💡 Usage
 
+### As a golangci-lint plugin
+
 To run the linter, use your custom binary:
 
 ```bash
@@ -129,6 +131,36 @@ To run the linter, use your custom binary:
 # Automatically fix issues
 ./custom-gcl run --fix
 ```
+
+### Standalone CLI
+
+The `sigfmt` binary can also be used directly without golangci-lint:
+
+```bash
+# Run analysis on a package
+sigfmt ./...
+
+# Automatically fix issues in-place
+sigfmt -fix ./...
+
+# With custom settings
+sigfmt -max-line-len 100 -tab-width 4 ./...
+
+# With parameter groups
+sigfmt -param-groups "context.Context,error;io.Reader,io.Writer" ./...
+```
+
+Available CLI flags:
+
+| Flag | Default | Description |
+|---|---|---|
+| `-max-line-len` | `120` | Maximum line length before multi-line signatures are required |
+| `-tab-width` | `8` | Visual width of a tab character for length calculations |
+| `-pack-struct-fields` | `true` | Aggressively pack function-type struct fields |
+| `-pack-interface-methods` | `true` | Aggressively pack method signatures in interfaces |
+| `-param-groups` | _(none)_ | Semicolon-separated parameter type groups (e.g. `"context.Context,error;io.Reader,io.Writer"`) |
+| `-fix` | `false` | Apply suggested fixes automatically (provided by `singlechecker`) |
+| `-V` | _(version)_ | Print analyzer version and exit |
 
 ## 🧠 How It Works
 
@@ -751,7 +783,7 @@ when to reach for each.
 | Configurable line length (`max-line-len`) | ✅ | ❌ | ✅ | ❌ |
 | Shortens non-signature long lines | ❌ | ❌ | ✅ | ❌ |
 | Enforces block cuddling / blank lines | ❌ | ❌ | ❌ | ✅ |
-| `golangci-lint` plugin with `--fix` | ✅ | ✅ | ❌ (standalone) | ✅ |
+| `golangci-lint` plugin with `--fix` | ✅ | ✅ | ✅ | ✅ |
 | Suggested fixes (diagnostics + autofix) | ✅ | ✅ | ✅ (rewrites files) | ✅ |
 
 ### When to use sigfmt
