@@ -6,9 +6,9 @@ import (
 
 func TestParseParamGroupsFlag(t *testing.T) {
 	tests := []struct {
-		name string
+		name  string
 		input string
-		want [][]string
+		want  [][]string
 	}{
 		{
 			name:  "empty string returns nil",
