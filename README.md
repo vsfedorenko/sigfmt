@@ -735,6 +735,49 @@ When signatures don't fit on one line, `sigfmt` applies intelligent packing to m
   }
 ```
 
+## ⚖️ Comparison: sigfmt vs gofumpt vs golines vs wsl
+
+sigfmt is a **focused** tool — it formats function signatures and nothing else.
+The other tools cover broader or adjacent domains. Use this matrix to decide
+when to reach for each.
+
+| Feature | `sigfmt` | `gofumpt` | `golines` | `wsl` |
+|---|---|---|---|---|
+| **Domain** | Function signatures only | General Go formatting (strict gofmt) | Long-line shortening (any code) | Whitespace / cuddling rules |
+| Collapse multi-line sigs that fit | ✅ | ❌ | ❌ | partial |
+| Pack multiple params per line | ✅ | ❌ | ❌ | ❌ |
+| Semantic parameter grouping (`param-groups`) | ✅ | ❌ | ❌ | ❌ |
+| Aggressive interface/struct packing | ✅ | ❌ | ❌ | ❌ |
+| Configurable line length (`max-line-len`) | ✅ | ❌ | ✅ | ❌ |
+| Shortens non-signature long lines | ❌ | ❌ | ✅ | ❌ |
+| Enforces block cuddling / blank lines | ❌ | ❌ | ❌ | ✅ |
+| `golangci-lint` plugin with `--fix` | ✅ | ✅ | ❌ (standalone) | ✅ |
+| Suggested fixes (diagnostics + autofix) | ✅ | ✅ | ✅ (rewrites files) | ✅ |
+
+### When to use sigfmt
+
+- You want **consistent function signatures** — collapsed when they fit,
+  semantically packed when they don't.
+- You have **interface-heavy** or **struct-with-callbacks** code and want to
+  minimize vertical bloat.
+- You need **semantic grouping** (e.g. `context.Context` always paired with a
+  transaction handle).
+
+### When to combine sigfmt with other tools
+
+- **sigfmt + gofumpt**: gofumpt for general formatting, sigfmt for signatures.
+  They don't conflict.
+- **sigfmt + golines**: golines to shorten non-signature long lines
+  (struct literals, call chains), sigfmt to own signatures.
+- **sigfmt + wsl**: wsl for block cuddling and blank-line rules, sigfmt for
+  signature packing. wsl's single-line/multi-line heuristic for signatures is
+  coarser than sigfmt's packing strategy — let sigfmt own that domain.
+
+> **Bottom line:** sigfmt is complementary, not a replacement. It fills the gap
+> that gofumpt, golines, and wsl leave open: intelligent, semantic formatting of
+> Go function signatures. For full migration recipes and side-by-side examples,
+> see the **[Configuration Cookbook](docs/cookbook.md)**.
+
 ## ⚡ Performance
 
 - **Fast**: Does not require type loading (`register.LoadModeSyntax`).
