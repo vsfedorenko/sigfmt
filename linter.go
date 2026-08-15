@@ -139,7 +139,7 @@ func (p *PluginLineWrap) handleFields(pass *analysis.Pass, fields *ast.FieldList
 }
 
 func (p *PluginLineWrap) checkAndReport(pass *analysis.Pass, sig *domain.Signature, formatter *format.Formatter) {
-	newText := formatter.Check(pass.Fset, sig)
+	newText := formatter.CheckWithSource(pass.ReadFile, pass.Fset, sig)
 	if newText != "" {
 		p.report(pass, sig, newText)
 	}
