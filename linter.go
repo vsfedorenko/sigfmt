@@ -60,6 +60,9 @@ func (p *PluginLineWrap) run(pass *analysis.Pass) (any, error) {
 		if isGenerated(pass, f) {
 			continue
 		}
+		if p.settings.IgnoreTests && strings.HasSuffix(pass.Fset.Position(f.Pos()).Filename, "_test.go") {
+			continue
+		}
 		ast.Inspect(f, func(n ast.Node) bool {
 			switch x := n.(type) {
 			case *ast.FuncDecl:

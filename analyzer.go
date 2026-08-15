@@ -26,6 +26,7 @@ func NewAnalyzer() *analysis.Analyzer {
 		packStructFields     bool
 		packInterfaceMethods bool
 		paramGroupsStr       string
+		ignoreTests          bool
 	)
 
 	flags := flag.NewFlagSet(analyzerName, flag.ExitOnError)
@@ -39,6 +40,8 @@ func NewAnalyzer() *analysis.Analyzer {
 		"aggressively pack method signatures in interfaces")
 	flags.StringVar(&paramGroupsStr, "param-groups", "",
 		"semicolon-separated parameter type groups; each group is a comma-separated list of type names (e.g. 'context.Context,error;io.Reader,io.Writer')")
+	flags.BoolVar(&ignoreTests, "ignore-tests", config.DefaultIgnoreTests,
+		"skip _test.go files entirely")
 
 	return &analysis.Analyzer{
 		Name:  analyzerName,
@@ -51,6 +54,7 @@ func NewAnalyzer() *analysis.Analyzer {
 				PackStructFields:     packStructFields,
 				PackInterfaceMethods: packInterfaceMethods,
 				ParamGroups:          parseParamGroupsFlag(paramGroupsStr),
+				IgnoreTests:          ignoreTests,
 			}
 			plugin := &PluginLineWrap{settings: settings}
 			return plugin.run(pass)

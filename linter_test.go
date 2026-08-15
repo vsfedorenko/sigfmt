@@ -98,6 +98,14 @@ func TestLineWrap_Settings(t *testing.T) {
 			pkg: "settings/pack_interfaces",
 		},
 		{
+			name: "IgnoreTests",
+			settings: map[string]interface{}{
+				settingMaxLineLen: float64(defaultLineLimit),
+				"ignore-tests":    true,
+			},
+			pkg: "settings/ignore_tests",
+		},
+		{
 			name: "ParamGroups",
 			settings: map[string]interface{}{
 				settingMaxLineLen: 50.0,

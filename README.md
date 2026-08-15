@@ -99,6 +99,7 @@ Configure the linter in your `.golangci.yml` file.
 *   `pack-struct-fields` (bool): Enable packing of struct fields. Default: `true`.
 *   `pack-interface-methods` (bool): Enable packing of interface methods. Default: `true`.
 *   `param-groups` (list of lists): Define groups of parameter types that should be kept together on the same line.
+*   `ignore-tests` (bool): Skip `_test.go` files entirely. Test files are frequently table-driven with intentionally wide signatures; many teams prefer formatting them manually. Default: `false`.
 
 **Generated files are skipped automatically.** Files carrying the
 conventional [`Code generated ... DO NOT EDIT.`](https://go.dev/s/generatedcode)

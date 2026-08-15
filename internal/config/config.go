@@ -9,6 +9,8 @@ const (
 	DefaultPackStructFields = true
 	// DefaultPackInterfaceMethods is the default value for packing interface methods.
 	DefaultPackInterfaceMethods = true
+	// DefaultIgnoreTests is the default for skipping _test.go files.
+	DefaultIgnoreTests = false
 )
 
 const (
@@ -17,6 +19,7 @@ const (
 	keyPackStructFields     = "pack-struct-fields"
 	keyPackInterfaceMethods = "pack-interface-methods"
 	keyParamGroups          = "param-groups"
+	keyIgnoreTests          = "ignore-tests"
 )
 
 // Settings contains configuration parameters for the linter.
@@ -35,6 +38,10 @@ type Settings struct {
 	// If a sequence of parameters matches a group, they are kept together
 	// and followed by a line break.
 	ParamGroups [][]string
+	// IgnoreTests skips files ending in _test.go entirely. Test files are
+	// frequently table-driven with intentionally wide signatures; many
+	// teams prefer formatting them manually.
+	IgnoreTests bool
 }
 
 // New creates a Settings struct from a generic map.
@@ -51,6 +58,7 @@ func New(settings any) Settings {
 	s.PackStructFields = parseBool(m, keyPackStructFields, s.PackStructFields)
 	s.PackInterfaceMethods = parseBool(m, keyPackInterfaceMethods, s.PackInterfaceMethods)
 	s.ParamGroups = parseParamGroups(m, keyParamGroups)
+	s.IgnoreTests = parseBool(m, keyIgnoreTests, s.IgnoreTests)
 
 	return s
 }
@@ -62,6 +70,7 @@ func defaults() Settings {
 		TabWidth:             DefaultTabWidth,
 		PackStructFields:     DefaultPackStructFields,
 		PackInterfaceMethods: DefaultPackInterfaceMethods,
+		IgnoreTests:          DefaultIgnoreTests,
 	}
 }
 
