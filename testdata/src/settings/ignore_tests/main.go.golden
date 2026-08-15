@@ -1,0 +1,13 @@
+package ignoretests
+
+// helper's packed form stays multi-line (params too long for one line) —
+// a real reformatting, not a collapse. In a REGULAR file the diagnostic
+// must fire even with ignore-tests: true.
+func helper(param1WithAVeryLongNamesHere string, param2WithAVeryLongNamesHere string,
+	param3WithAVeryLongNamesHere string, param4WithAVeryLongNamesHere string, param5WithAVeryLongNamesHere string,
+	param6WithAVeryLongNamesHere string) error { // want "Signature can be formatted more compactly"
+	return nil
+}
+
+// keep marks helper as used from the test file side.
+var keep = helper
