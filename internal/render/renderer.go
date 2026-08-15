@@ -51,7 +51,52 @@ func (r *Renderer) Node(fset *token.FileSet, n ast.Node) string {
 		return ""
 	}
 
-	return strings.Join(strings.Fields(buf.String()), " ")
+	return normalizeSpacing(buf.String())
+}
+
+// normalizeSpacing collapses runs of whitespace to single spaces and trims
+// the ends — but only OUTSIDE string literals. go/printer output may span
+// multiple lines for composite type expressions; naive strings.Fields
+// would also mangle spaces inside literals (e.g. array-length expressions
+// like [unsafe.Sizeof("a  b")]byte).
+func normalizeSpacing(src string) string {
+	var sb strings.Builder
+	sb.Grow(len(src))
+
+	inLiteral := false
+	prevSpace := true // trims leading spaces without special-casing index 0
+
+	for i := 0; i < len(src); i++ {
+		ch := src[i]
+
+		if ch == '"' {
+			inLiteral = !inLiteral
+			prevSpace = false
+			sb.WriteByte(ch)
+			continue
+		}
+
+		if inLiteral {
+			sb.WriteByte(ch)
+			continue
+		}
+
+		if ch == ' ' || ch == '	' || ch == '\n' || ch == '\r' {
+			if !prevSpace {
+				sb.WriteByte(' ')
+				prevSpace = true
+			}
+			continue
+		}
+
+		prevSpace = false
+		sb.WriteByte(ch)
+	}
+
+	// Trim the trailing space the loop may have appended (inLiteral is
+	// false here for well-formed printer output).
+	out := sb.String()
+	return strings.TrimSuffix(out, " ")
 }
 
 // FieldList converts a list of fields (parameters, results, generics) to a comma-separated string.
