@@ -60,7 +60,7 @@ func (p *PluginLineWrap) run(pass *analysis.Pass) (any, error) {
 		if isGenerated(pass, f) {
 			continue
 		}
-		if p.settings.IgnoreTests && strings.HasSuffix(pass.Fset.Position(f.Pos()).Filename, "_test.go") {
+		if p.settings.IgnoreTests && strings.HasSuffix(pass.Fset.Position(f.Pos()).Filename, testFileSuffix) {
 			continue
 		}
 		ast.Inspect(f, func(n ast.Node) bool {
@@ -88,7 +88,10 @@ func (p *PluginLineWrap) run(pass *analysis.Pass) (any, error) {
 const generatedFilePrefix = "Code generated"
 
 // generatedFileSuffix terminates the required "DO NOT EDIT." sentence.
-const generatedFileSuffix = "DO NOT EDIT."
+const (
+	generatedFileSuffix = "DO NOT EDIT."
+	testFileSuffix      = "_test.go"
+)
 
 // isGenerated reports whether the file is machine-generated, following the
 // same convention as golangci-lint and go/analysis' analysistest: a comment
@@ -142,7 +145,7 @@ func (p *PluginLineWrap) handleFields(pass *analysis.Pass, fields *ast.FieldList
 }
 
 func (p *PluginLineWrap) checkAndReport(pass *analysis.Pass, sig *domain.Signature, formatter *format.Formatter) {
-	newText := formatter.CheckWithSource(pass.ReadFile, pass.Fset, sig)
+	newText := formatter.Check(pass.ReadFile, pass.Fset, sig)
 	if newText != "" {
 		p.report(pass, sig, newText)
 	}
