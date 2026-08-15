@@ -105,7 +105,10 @@ type HandlerInterface interface {
 		handler func(string) error,
 	) error // want "Signature can be formatted more compactly"
 
-	HandleMultiple(ctx context.Context, handlers ...func(string) error) error // want "Signature can be formatted more compactly"
+	// No diagnostic: already single-line and within the limit — a "more
+	// compact" fix would be a byte-identical no-op (suppressed by the
+	// no-op guard in Formatter.CheckWithSource).
+	HandleMultiple(ctx context.Context, handlers ...func(string) error) error
 }
 
 // Empty interface.

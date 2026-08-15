@@ -144,5 +144,8 @@ type CallbackHandler struct {
 		callback func(string) error,
 	) error // want "Signature can be formatted more compactly"
 
-	ProcessMultiple func(callback func(string) error, fallback func() error) error // want "Signature can be formatted more compactly"
+	// No diagnostic: already single-line and within the limit — a "more
+	// compact" fix would be a byte-identical no-op (suppressed by the
+	// no-op guard in Formatter.CheckWithSource).
+	ProcessMultiple func(callback func(string) error, fallback func() error) error
 }
