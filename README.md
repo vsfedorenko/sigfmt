@@ -100,6 +100,13 @@ Configure the linter in your `.golangci.yml` file.
 *   `pack-interface-methods` (bool): Enable packing of interface methods. Default: `true`.
 *   `param-groups` (list of lists): Define groups of parameter types that should be kept together on the same line.
 
+**Generated files are skipped automatically.** Files carrying the
+conventional [`Code generated ... DO NOT EDIT.`](https://go.dev/s/generatedcode)
+header before the package clause (e.g. `*.pb.go` output, mocks, `zz_*`
+stringers) produce no diagnostics — generated code is not hand-maintained.
+There is no setting for this: it always applies, matching the behaviour of
+golangci-lint core linters.
+
 **Example `.golangci.yml`:**
 
 ```yaml
