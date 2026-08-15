@@ -33,9 +33,9 @@ func New(cfg config.Settings, renderer *render.Renderer) *Formatter {
 	}
 }
 
-// Check determines if a signature needs formatting changes.
-// Returns the new formatted text if changes are needed, or empty string otherwise.
-func (f *Formatter) Check(fset *token.FileSet, sig *domain.Signature) string {
+// check applies the strategies and returns the winning output, or "" when
+// no strategy applies. Guard-free: the no-op guard lives in Check.
+func (f *Formatter) check(fset *token.FileSet, sig *domain.Signature) string {
 	if sig.FuncType == nil || sig.FuncType.Params == nil {
 		return ""
 	}
@@ -69,12 +69,17 @@ func (f *Formatter) originalText(readFile func(filename string) ([]byte, error),
 	return string(src[pos.Offset:end.Offset]), true
 }
 
-// CheckWithSource is Check plus a no-op guard: when the winning strategy's
-// output is byte-identical to the signature's current source text, no
-// diagnostic is emitted. readFile is analysis.Pass.ReadFile in production
-// and a file loader in tests.
-func (f *Formatter) CheckWithSource(readFile func(filename string) ([]byte, error), fset *token.FileSet, sig *domain.Signature) string {
-	newText := f.Check(fset, sig)
+// Check determines if a signature needs formatting changes: it applies
+// the strategies and returns the new formatted text, or "" when no
+// change is warranted. A no-op guard suppresses the diagnostic when the
+// winning strategy's output is identical to the signature's current
+// source text modulo the first line's leading indentation — a fix that
+// would rewrite the source into what it already is must not be reported.
+// readFile is analysis.Pass.ReadFile in production and a file loader in
+// tests; when the source cannot be read the guard fails open (the
+// diagnostic is kept).
+func (f *Formatter) Check(readFile func(filename string) ([]byte, error), fset *token.FileSet, sig *domain.Signature) string {
+	newText := f.check(fset, sig)
 	if newText == "" {
 		return ""
 	}
