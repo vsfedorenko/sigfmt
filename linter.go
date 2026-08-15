@@ -3,6 +3,7 @@ package sigfmt
 import (
 	"go/ast"
 	"go/token"
+	"strings"
 
 	"github.com/golangci/plugin-module-register/register"
 	"golang.org/x/tools/go/analysis"
@@ -56,6 +57,9 @@ func (p *PluginLineWrap) run(pass *analysis.Pass) (any, error) {
 	formatter := format.New(p.settings, renderer)
 
 	for _, f := range pass.Files {
+		if isGenerated(pass, f) {
+			continue
+		}
 		ast.Inspect(f, func(n ast.Node) bool {
 			switch x := n.(type) {
 			case *ast.FuncDecl:
@@ -73,6 +77,38 @@ func (p *PluginLineWrap) run(pass *analysis.Pass) (any, error) {
 		})
 	}
 	return nil, nil
+}
+
+// generatedFilePrefix is the conventional machine-generated marker line
+// (https://go.dev/s/generatedcode): a comment appearing before the package
+// clause and matching /^ Code generated .* DO NOT EDIT\.$/.
+const generatedFilePrefix = "Code generated"
+
+// generatedFileSuffix terminates the required "DO NOT EDIT." sentence.
+const generatedFileSuffix = "DO NOT EDIT."
+
+// isGenerated reports whether the file is machine-generated, following the
+// same convention as golangci-lint and go/analysis' analysistest: a comment
+// before the package clause containing "Code generated ... DO NOT EDIT.".
+// Generated files (*.pb.go, mocks, zz_*) are not hand-maintained, so
+// reporting formatting diagnostics on them is noise.
+func isGenerated(pass *analysis.Pass, f *ast.File) bool {
+	for _, group := range f.Comments {
+		if group.Pos() >= f.Package {
+			break // comments after the package clause are not the header
+		}
+		for _, c := range group.List {
+			text := strings.TrimSpace(c.Text)
+			if strings.HasPrefix(text, "//") {
+				text = strings.TrimSpace(text[2:])
+			}
+			if strings.HasPrefix(text, generatedFilePrefix) &&
+				strings.HasSuffix(text, generatedFileSuffix) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (p *PluginLineWrap) handleTypeSpec(pass *analysis.Pass, spec *ast.TypeSpec, extractor *astinfo.Extractor, formatter *format.Formatter) {
