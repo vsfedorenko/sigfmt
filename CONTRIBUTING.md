@@ -6,7 +6,7 @@ the basics of getting set up and the expectations for contributions.
 ## Getting Started
 
 1. **Fork** the repository and clone your fork.
-2. Ensure you have **Go 1.24+** installed ([downloads](https://go.dev/dl/)).
+2. Ensure you have **Go 1.25+** installed ([downloads](https://go.dev/dl/)).
 3. Optionally install [`golangci-lint`](https://golangci-lint.run/usage/install/).
 4. Create a feature branch: `git checkout -b my-feature`.
 
