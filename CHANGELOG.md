@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `gofmt -s` compatibility contract: `TestGoldenFilesAreGofmtSFixedPoints`
+  verifies every golden file (the exact bytes sigfmt's suggested fixes
+  produce) is a `gofmt -s` fixed point, checked against the real gofmt
+  binary of the running toolchain. New `gofmt_compat` fixture covers
+  simplified syntax around rewritten signatures (elided composite literal
+  types, range over int).
 - `.pre-commit-hooks.yaml` — official [pre-commit](https://pre-commit.com/)
   hooks `sigfmt` (check) and `sigfmt-fix` (manual in-place reformat) for the
   standalone CLI; documented in README.
