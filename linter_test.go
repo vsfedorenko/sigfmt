@@ -61,6 +61,13 @@ func TestLineWrap_Limits(t *testing.T) {
 	}
 }
 
+// TestLineWrap_GofmtCompat tests the linter on signatures surrounded by
+// gofmt -s simplified syntax (composite literals, range over int): the
+// suggested fixes must leave such files as gofmt -s fixed points.
+func TestLineWrap_GofmtCompat(t *testing.T) {
+	runTestWithSettings(t, map[string]interface{}{}, "gofmt_compat")
+}
+
 // TestLineWrap_Settings tests the linter with different configuration settings.
 func TestLineWrap_Settings(t *testing.T) {
 	tests := []struct {
