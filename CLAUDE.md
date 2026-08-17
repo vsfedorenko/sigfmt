@@ -3,7 +3,7 @@
 **Context & Guidelines for AI Assistants**
 
 ## Project: `sigfmt`
-- **Type:** `golangci-lint` plugin (Go 1.24+).
+- **Type:** `golangci-lint` plugin (Go 1.25+).
 - **Goal:** Check/format function signatures (declarations, methods, literals, interfaces, struct fields).
 
 ## Core Logic
