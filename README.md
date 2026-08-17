@@ -182,7 +182,50 @@ Available CLI flags:
 | `-pack-interface-methods` | `true` | Aggressively pack method signatures in interfaces |
 | `-param-groups` | _(none)_ | Semicolon-separated parameter type groups (e.g. `"context.Context,error;io.Reader,io.Writer"`) |
 | `-fix` | `false` | Apply suggested fixes automatically (provided by `singlechecker`) |
+| `-diff` | `false` | Preview fixes as a unified diff without applying them (combine with `-fix`; provided by `singlechecker`) |
 | `-V` | _(version)_ | Print analyzer version and exit |
+
+#### Editor integration
+
+The standalone CLI edits a single file in place (`sigfmt -fix file.go`), which
+makes format-on-save easy to wire up. sigfmt is not a language server, and
+gopls does not run third-party analyzers, so the pattern is always the same:
+invoke the binary on the saved file and reload the buffer.
+
+**VS Code** — with the
+[Run on Save](https://marketplace.visualstudio.com/items?itemName=emeraldwalk.RunOnSave)
+extension, append to `settings.json`:
+
+```json
+{
+  "emeraldwalk.runonsave": {
+    "commands": [
+      {
+        "match": "\\.go$",
+        "cmd": "sigfmt -fix '${file}'"
+      }
+    ]
+  }
+}
+```
+
+**Neovim** — format the current buffer on save:
+
+```lua
+vim.api.nvim_create_autocmd("BufWritePre", {
+  pattern = "*.go",
+  callback = function(args)
+    -- sigfmt -fix edits the file in place; reload it into the buffer.
+    vim.fn.system({ "sigfmt", "-fix", vim.api.nvim_buf_get_name(args.buf) })
+    vim.cmd("edit!")
+  end,
+})
+```
+
+**Other editors** — if your editor cannot run a command on save, use the
+pre-commit hooks above: `sigfmt-fix` on the manual stage
+(`pre-commit run --hook-stage manual sigfmt-fix`) applies the same fixes
+before every commit.
 
 ## 🧠 How It Works
 
