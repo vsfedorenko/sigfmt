@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `.pre-commit-hooks.yaml` — official [pre-commit](https://pre-commit.com/)
+  hooks `sigfmt` (check) and `sigfmt-fix` (manual in-place reformat) for the
+  standalone CLI; documented in README.
 - CHANGELOG.md — version history in Keep a Changelog format.
 - `docs/cookbook.md` — real-world configuration cookbook with side-by-side
   migration examples for `golines` and `wsl` users.
