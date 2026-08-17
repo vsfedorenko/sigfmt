@@ -158,6 +158,20 @@ sigfmt -max-line-len 100 -tab-width 4 ./...
 sigfmt -param-groups "context.Context,error;io.Reader,io.Writer" ./...
 ```
 
+#### Pre-commit integration
+
+The repo ships [`.pre-commit-hooks.yaml`](.pre-commit-hooks.yaml). Add to your
+`.pre-commit-config.yaml`:
+
+```yaml
+repos:
+  - repo: https://github.com/vsfedorenko/sigfmt
+    rev: v0.3.0  # use the latest released tag
+    hooks:
+      - id: sigfmt        # check only, blocks the commit on violations
+      - id: sigfmt-fix    # manual stage: pre-commit run --hook-stage manual sigfmt-fix
+```
+
 Available CLI flags:
 
 | Flag | Default | Description |

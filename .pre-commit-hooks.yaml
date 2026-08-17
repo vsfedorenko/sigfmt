@@ -1,0 +1,35 @@
+# Pre-commit hooks for sigfmt — https://pre-commit.com/
+#
+# Usage in .pre-commit-config.yaml:
+#
+#   repos:
+#     - repo: https://github.com/vsfedorenko/sigfmt
+#       rev: v0.3.0  # use a released tag
+#       hooks:
+#         - id: sigfmt
+#
+# `sigfmt` checks changed files and blocks the commit on violations (exit 3).
+# `sigfmt-fix` is the same check with -fix: it rewrites files in place and
+# fails the hook so the reformatted files get staged (stage them with
+# `git add -u` and retry, or run it manually: pre-commit run --hook-stage manual sigfmt-fix).
+#
+# `language: golang` builds the CLI from the pinned rev with the Go toolchain
+# available in the pre-commit environment; no global install needed.
+- id: sigfmt
+  name: sigfmt
+  description: Check Go function signatures formatting
+  entry: sigfmt
+  language: golang
+  pass_filenames: true
+  types: [go]
+  files: \.go$
+
+- id: sigfmt-fix
+  name: sigfmt (fix in place)
+  description: Reformat Go function signatures in place
+  entry: sigfmt -fix
+  language: golang
+  pass_filenames: true
+  types: [go]
+  files: \.go$
+  stages: [manual]
