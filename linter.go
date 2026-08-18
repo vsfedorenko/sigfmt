@@ -2,6 +2,8 @@ package sigfmt
 
 import (
 	"go/ast"
+	"go/build"
+	"go/build/constraint"
 	"go/token"
 	"strings"
 
@@ -63,6 +65,9 @@ func (p *PluginLineWrap) run(pass *analysis.Pass) (any, error) {
 		if p.settings.IgnoreTests && strings.HasSuffix(pass.Fset.Position(f.Pos()).Filename, testFileSuffix) {
 			continue
 		}
+		if isBuildIgnored(f) {
+			continue
+		}
 		ast.Inspect(f, func(n ast.Node) bool {
 			switch x := n.(type) {
 			case *ast.FuncDecl:
@@ -112,6 +117,56 @@ func isGenerated(pass *analysis.Pass, f *ast.File) bool {
 				strings.HasSuffix(text, generatedFileSuffix) {
 				return true
 			}
+		}
+	}
+	return false
+}
+
+// isBuildIgnored reports whether the file carries a build constraint that
+// excludes it from the current build (e.g. `//go:build ignore`). Package-
+// pattern runs never load such files, but explicit file arguments
+// (`sigfmt ignored.go`) bypass the package loader and reach the analyzer
+// directly. go vet tolerates such files; so does sigfmt: they are scripts
+// driven by `go run`, not compiled code, so reporting on them is noise.
+func isBuildIgnored(f *ast.File) bool {
+	for _, group := range f.Comments {
+		if group.Pos() >= f.Package {
+			break // build constraints live before the package clause
+		}
+		for _, c := range group.List {
+			text := c.Text
+			if !strings.HasPrefix(text, "//go:build") && !strings.HasPrefix(text, "// +build") {
+				continue
+			}
+			expr, err := constraint.Parse(text)
+			if err != nil {
+				continue
+			}
+			if !expr.Eval(hostBuildTags) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// hostBuildTags reports whether a build tag is satisfied for the toolchain's
+// default build context: GOOS, GOARCH, the compiler, "cgo" when enabled,
+// and the release tags (go1.1 ... go1.N). This mirrors how the go command
+// decides which files belong to a package, so `//go:build linux` stays
+// lintable on Linux while `//go:build ignore` or `//go:build windows`
+// is skipped.
+func hostBuildTags(tag string) bool {
+	ctx := build.Default
+	if tag == ctx.GOOS || tag == ctx.GOARCH || tag == ctx.Compiler {
+		return true
+	}
+	if tag == "cgo" && ctx.CgoEnabled {
+		return true
+	}
+	for _, rt := range ctx.ReleaseTags {
+		if tag == rt {
+			return true
 		}
 	}
 	return false

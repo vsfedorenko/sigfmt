@@ -143,6 +143,14 @@ stringers) produce no diagnostics — generated code is not hand-maintained.
 There is no setting for this: it always applies, matching the behaviour of
 golangci-lint core linters.
 
+**Build-excluded files are skipped too.** A file whose build constraint
+excludes it from the current build (`//go:build ignore`, `//go:build windows`
+on Linux) is skipped even when passed directly as a file argument
+(`sigfmt gen.go`) — the same tolerance `go vet` has. Constraints are
+evaluated with the toolchain's default context, so `//go:build linux`
+stays lintable on Linux. Files with `//line` directives are processed
+normally: the directive text survives any suggested fix.
+
 **Example `.golangci.yml`** (verified against a custom v2.12.2 binary — including
 the `param-groups` shape below):
 
