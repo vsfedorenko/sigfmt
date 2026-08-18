@@ -304,3 +304,4 @@ $RECYCLE.BIN/
 
 # local codegraph index
 .codegraph/
+.testbin/
