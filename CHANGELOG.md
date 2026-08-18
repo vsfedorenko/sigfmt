@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Glitch corpus (8 hostile signatures): extreme parameter counts, nested
+  generics with unions, generic receivers, pointer-of-pointer types,
+  variadic map/slice/func chains, curried returns, struct fields and
+  interface methods. For every entry the full fix cycle asserts three
+  invariants — the applied output parses, is a gofmt fixed point, and a
+  second pass is a no-op (idempotence) — plus a `go vet` type-check of
+  the fixed output (a semantic-breaking rewrite would parse fine but
+  fail the build; this catches it).
+
+### Added
 - CLI smoke test suite (`cmd/sigfmt/cli_smoke_test.go`, 7 tests): the
   released binary surface exercised end-to-end — clean package exits 0,
   violations exit non-zero with the diagnostic, `-fix -diff` is a
