@@ -35,6 +35,11 @@ test-clean: ## Run tests without cache
 	@echo "Running tests without cache..."
 	@go test -count=1 -v ./...
 
+.PHONY: bench
+bench: ## Run benchmark suite (analyzer vs gofmt baseline)
+	@echo "Running benchmarks..."
+	go test -bench . -benchmem -run '^$' ./...
+
 .PHONY: fmt
 fmt: ## Format code
 	@echo "Formatting code..."
