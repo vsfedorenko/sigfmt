@@ -90,3 +90,9 @@ jobs:
           working-directory: example
           args: --timeout=5m
         continue-on-error: true
+
+      - name: Plugin-path e2e (custom binary, third-party module)
+        working-directory: example
+        run: |
+          go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2 custom
+          go test -run TestPluginPath -v .
