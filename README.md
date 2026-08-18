@@ -63,37 +63,72 @@ The linter analyzes:
 
 ## 🛠 Installation
 
-`sigfmt` is a plugin for `golangci-lint`. You need to build a custom version of `golangci-lint` that includes this plugin.
+`sigfmt` is a plugin for `golangci-lint` **v2** (it uses the
+[`plugin-module-register`](https://github.com/golangci/plugin-module-register)
+module API introduced in v2.0.0). You build a custom `golangci-lint` binary that
+includes the plugin, either from a released module version or from a local checkout.
 
-### Option 1: Automatic (Recommended)
+### Option 1: From a released version (Recommended)
 
 1.  Create a `.custom-gcl.yml` file in your project root:
     ```yaml
-    version: v1.64.6 # Use your desired golangci-lint version
+    version: v2.12.2 # any golangci-lint v2 release, see matrix below
     plugins:
       - module: 'github.com/vsfedorenko/sigfmt'
-        version: v0.1.0 # Replace with the latest version
+        version: v1.2.0 # Replace with the latest released tag
     ```
 
 2.  Run the command to build the custom binary:
     ```bash
     golangci-lint custom
     ```
-    This will create a `custom-gcl` binary in your directory.
+    This downloads `sigfmt` from the Go module proxy and produces a `custom-gcl`
+    binary in the current directory.
 
-### Option 2: Manual
+### Option 2: From a local checkout
 
-1.  Add a blank import of the module inside `cmd/golangci-lint/plugins.go` (or equivalent):
-    ```go
-    import _ "github.com/vsfedorenko/sigfmt"
+Useful while developing the plugin, or to test an unreleased commit:
+
+1.  Create a `.custom-gcl.yml` next to your project (the `path` is relative to it):
+    ```yaml
+    version: v2.12.2
+    plugins:
+      - module: 'github.com/vsfedorenko/sigfmt'
+        path: ../sigfmt # relative path to the plugin module root
     ```
-2.  Run `go mod tidy` and `make build` to produce your custom `golangci-lint`.
+2.  Run `golangci-lint custom`.
+
+### Supported golangci-lint versions
+
+sigfmt targets the v2 module-plugin API. Both build paths were exercised
+end-to-end (plugin loads, diagnostics produced, `--fix` applies, settings decoded):
+
+| golangci-lint | plugin API | From proxy | Local path | Notes |
+|---|---|---|---|---|
+| v2.7.1  | `plugin-module-register` | ✅ | ✅ | Oldest v2 tested |
+| v2.12.2 | `plugin-module-register` | ✅ | ✅ | Newest v2 tested |
+
+v1 (`golangci-lint` ≤ 1.x) is **not** supported: the v1 plugin API predates
+`plugin-module-register`. If `golangci-lint custom` reports an unknown command,
+upgrade golangci-lint to v2 first.
+
+> **Build note (Linux, newer binutils):** if the custom build fails at link time
+> with `collect2: fatal error: cannot find 'ld'` and the gcc command line contains
+> `-fuse-ld=gold`, your binutils no longer ships the gold linker (dropped in
+> binutils ≥ 2.44 on some distros). Build with `CGO_ENABLED=0` — the linter is
+> pure Go and needs no cgo:
+> ```bash
+> CGO_ENABLED=0 golangci-lint custom
+> ```
 
 ## ⚙️ Configuration
 
-Configure the linter in your `.golangci.yml` file.
+Configure the linter in your project's `.golangci.yml` **v2 format** (note the
+top-level `version: "2"` and `linters.settings` nesting — a v1-style top-level
+`linters-settings` key is rejected by golangci-lint v2 with
+`unsupported version of the configuration`).
 
-**Parameters:**
+**Parameters** (under `linters.settings.custom.sigfmt.settings`):
 *   `max-line-len` (int): Maximum allowed line length. Default: `120`.
 *   `tab-width` (int): Tab width for visual calculation. Default: `8`.
 *   `pack-struct-fields` (bool): Enable packing of struct fields. Default: `true`.
@@ -108,22 +143,29 @@ stringers) produce no diagnostics — generated code is not hand-maintained.
 There is no setting for this: it always applies, matching the behaviour of
 golangci-lint core linters.
 
-**Example `.golangci.yml`:**
+**Example `.golangci.yml`** (verified against a custom v2.12.2 binary — including
+the `param-groups` shape below):
 
 ```yaml
-linters-settings:
-  custom:
-    sigfmt:
-      type: "module"
-      description: "Advanced function signature formatter"
-      settings:
-        max-line-len: 120
-        tab-width: 8
-        pack-struct-fields: true
-        pack-interface-methods: true
-        param-groups:
-          - ["context.Context", "*sql.Tx"] # Group ctx and tx together
-          - ["context.Context"]            # Ensure ctx is on its own line (if no tx)
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - sigfmt
+  settings:
+    custom:
+      sigfmt:
+        type: "module"
+        description: "Advanced function signature formatter"
+        settings:
+          max-line-len: 120
+          tab-width: 8
+          pack-struct-fields: true
+          pack-interface-methods: true
+          param-groups:
+            - ["context.Context", "*sql.Tx"] # Group ctx and tx together
+            - ["context.Context"]            # Ensure ctx is on its own line (if no tx)
 ```
 
 ## 💡 Usage
@@ -166,7 +208,7 @@ The repo ships [`.pre-commit-hooks.yaml`](.pre-commit-hooks.yaml). Add to your
 ```yaml
 repos:
   - repo: https://github.com/vsfedorenko/sigfmt
-    rev: v0.3.0  # use the latest released tag
+    rev: v1.2.0  # use the latest released tag
     hooks:
       - id: sigfmt        # check only, blocks the commit on violations
       - id: sigfmt-fix    # manual stage: pre-commit run --hook-stage manual sigfmt-fix
