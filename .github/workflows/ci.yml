@@ -94,5 +94,5 @@ jobs:
       - name: Plugin-path e2e (custom binary, third-party module)
         working-directory: example
         run: |
-          golangci-lint custom
+          go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2 custom
           go test -run TestPluginPath -v .
