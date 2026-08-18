@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Plugin-path e2e suite (`example/gcl_e2e_test.go`): builds the custom
+  golangci-lint binary (`golangci-lint custom`, the same command as
+  `make build-example`) and runs it against a throwaway third-party
+  module. Pins the integration contracts found by hand-probing:
+  the linter activates only when the target config declares it under
+  `linters.settings.custom` (bare `enable:` yields "unknown linters" —
+  golangci v2 behavior worth documenting in the test);
+  `--fix` applies in place and a re-run is clean (idempotence through
+  golangci); comment preservation (#29) holds through the plugin path;
+  a 30-file bulk package reports every diagnostic once golangci's
+  default caps (`max-same-issues=3`) are lifted. CI runs the suite in
+  the Build Example job.
+
+### Added
 - Glitch corpus (8 hostile signatures): extreme parameter counts, nested
   generics with unions, generic receivers, pointer-of-pointer types,
   variadic map/slice/func chains, curried returns, struct fields and
