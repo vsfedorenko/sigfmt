@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`//line` directives no longer crash the analyzer.** `GetIndent` called
+  `File.LineStart(File.Line(pos))`, which panics with `invalid line number`
+  when a `//line` (or `/*line*/`) directive maps a position beyond the
+  physical end of the file — the token line table is sparse under such
+  directives. The indent is now resolved by a backward scan to the start of
+  the physical line, which is directive-agnostic. Formatting still works on
+  such files: collapsible signatures after a `//line` directive are collapsed,
+  the directive text survives the fix, and a second run is a no-op
+  (`TestLineDirectivesDoNotCrash`, `TestLineDirectiveCollapseAndStability`).
+- **`//go:build ignore` files are skipped in file-argument mode.** Package
+  patterns (`sigfmt ./...`) never load build-excluded files, but passing a
+  file directly (`sigfmt gen.go`) bypasses the package loader and previously
+  produced diagnostics on `go run` scripts. The analyzer now evaluates the
+  file's build constraints with the toolchain's default context (GOOS,
+  GOARCH, compiler, cgo, release tags) and skips files excluded from the
+  current build — the same tolerance `go vet` has. `//go:build linux`
+  remains lintable on Linux (`TestBuildIgnoredFileSkipped`).
+
 ### Changed
 - **Documentation: golangci-lint v2 plugin path end-to-end.** The README
   previously showed the v1-era build (`version: v1.64.6`, manual blank-import)
