@@ -25,17 +25,23 @@ aggressive packing for interfaces and structs, and conservative packing for
 regular functions.
 
 ```yaml
-# .golangci.yml
-linters-settings:
-  custom:
-    sigfmt:
-      type: "module"
-      description: "Function signature formatter"
-      settings:
-        max-line-len: 120
-        tab-width: 8
-        pack-struct-fields: true
-        pack-interface-methods: true
+# .golangci.yml (golangci-lint v2 format)
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - sigfmt
+  settings:
+    custom:
+      sigfmt:
+        type: "module"
+        description: "Function signature formatter"
+        settings:
+          max-line-len: 120
+          tab-width: 8
+          pack-struct-fields: true
+          pack-interface-methods: true
 ```
 
 This is equivalent to omitting `settings` entirely — every key has a default.
@@ -51,16 +57,22 @@ on its own visual line (or is paired with a transaction handle), making diffs
 smaller and signatures easier to scan.
 
 ```yaml
-linters-settings:
-  custom:
-    sigfmt:
-      type: "module"
-      description: "Function signature formatter"
-      settings:
-        max-line-len: 120
-        param-groups:
-          - ["context.Context", "*sql.Tx"]  # ctx + tx always share a line
-          - ["context.Context"]              # ctx alone on its own line
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - sigfmt
+  settings:
+    custom:
+      sigfmt:
+        type: "module"
+        description: "Function signature formatter"
+        settings:
+          max-line-len: 120
+          param-groups:
+            - ["context.Context", "*sql.Tx"]  # ctx + tx always share a line
+            - ["context.Context"]              # ctx alone on its own line
 ```
 
 **Before** (manual formatting, inconsistent):
@@ -100,14 +112,20 @@ testing) accumulate many method signatures. Aggressive packing collapses them
 so a 30-method interface stays readable.
 
 ```yaml
-linters-settings:
-  custom:
-    sigfmt:
-      type: "module"
-      description: "Function signature formatter"
-      settings:
-        max-line-len: 120
-        pack-interface-methods: true   # multiple params per line
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - sigfmt
+  settings:
+    custom:
+      sigfmt:
+        type: "module"
+        description: "Function signature formatter"
+        settings:
+          max-line-len: 120
+          pack-interface-methods: true   # multiple params per line
 ```
 
 **Before:**
@@ -150,14 +168,20 @@ Event-driven code often has structs full of `func` fields — callbacks, hooks,
 and handlers. `pack-struct-fields` collapses short ones and packs long ones.
 
 ```yaml
-linters-settings:
-  custom:
-    sigfmt:
-      type: "module"
-      description: "Function signature formatter"
-      settings:
-        max-line-len: 120
-        pack-struct-fields: true
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - sigfmt
+  settings:
+    custom:
+      sigfmt:
+        type: "module"
+        description: "Function signature formatter"
+        settings:
+          max-line-len: 120
+          pack-struct-fields: true
 ```
 
 **Before:**

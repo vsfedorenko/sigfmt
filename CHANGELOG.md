@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- **Documentation: golangci-lint v2 plugin path end-to-end.** The README
+  previously showed the v1-era build (`version: v1.64.6`, manual blank-import)
+  and a v1-format `.golangci.yml` (`linters-settings:` at top level) that
+  golangci-lint v2 rejects with `unsupported version of the configuration`.
+  Both README and docs/cookbook.md now document the v2 module-plugin path:
+  `.custom-gcl.yml` from a released tag or a local `path:`, a verified
+  `version: "2"` config example, and a tested-versions matrix
+  (v2.7.1, v2.12.2 — proxy and local builds, `--fix`, settings decoding all
+  exercised). Added a build note for Linux binutils ≥ 2.44 systems where the
+  gold linker was removed (`CGO_ENABLED=0 golangci-lint custom`). Example
+  directory bumped to v2.12.2 with corrected expected output; stale
+  pre-commit `rev` in README updated to the latest tag.
 - **Comment preservation (zero loss)**: signatures containing comments
   inside the rewritten range are now left untouched instead of being
   collapsed with the comments silently dropped. The renderer rebuilds

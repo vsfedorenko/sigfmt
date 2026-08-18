@@ -1,5 +1,5 @@
 # The golangci-lint version used to build the custom binary.
-version: v2.7.1
+version: v2.12.2
 
 # The list of the plugins to integrate inside the custom binary.
 plugins:
