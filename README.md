@@ -877,9 +877,35 @@ when to reach for each.
 
 ## ⚡ Performance
 
-- **Fast**: Does not require type loading (`register.LoadModeSyntax`).
-- **Efficient**: Uses minimal memory (~20-30MB for 10k LOC) and works only with AST.
+- **Fast**: Does not require type loading (`register.LoadModeSyntax`). AST-only analysis, no type information.
 - **Parallel**: Supports parallel execution via `golangci-lint`.
+
+### Benchmark suite
+
+`go test -bench . -benchmem` (or `make bench`) measures the analyzer through its
+public API on a deterministic generated corpus — 12 files × 40 signatures,
+cycling collapsible / packable / interface / struct-field shapes. Every corpus
+file is guarded to be a `gofmt` fixed point, so runs are comparable.
+
+Measured numbers, Go 1.25 / linux-arm64, medians of 3 × 5s runs:
+
+| Benchmark                        | Profile      | Time/op   | Allocs/op |
+|----------------------------------|--------------|-----------|-----------|
+| `BenchmarkAnalyzer`              | violations   | ~7.2 ms   | ~53.8 k   |
+| `BenchmarkAnalyzer`              | clean        | ~3.6 ms   | ~25.5 k   |
+| `BenchmarkSigfmtWithParse`       | violations   | ~10.2 ms  | ~84 k     |
+| `BenchmarkSigfmtWithParse`       | clean        | ~5.6 ms   | ~48.6 k   |
+| `BenchmarkGofmtBaseline` (gofmt) | violations   | ~3.4 ms   | ~29.8 k   |
+| `BenchmarkGofmtBaseline` (gofmt) | clean        | ~2.5 ms   | ~24.3 k   |
+
+Reading the numbers honestly: including parsing, sigfmt is currently **~3.0×
+gofmt on unformatted code** and **~2.2× on already-clean code** — above the
+original <2× aspiration. In absolute terms the analyzer costs ~15µs per
+signature (7.2 ms for 480 signatures), which is negligible next to package
+loading in a real golangci-lint run. CPU profiles attribute the cost to
+allocation pressure (53.8 k allocs/op in the analysis loop), so the path to
+the <2× target is allocation reduction in extraction/rendering — tracked as
+follow-up optimization work, not hidden from the numbers.
 
 ## 🤔 FAQ
 

@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Performance benchmark suite (`make bench`): black-box benchmarks through
+  the public analyzer API on a deterministic generated corpus (12 files × 40
+  signatures, four signature shapes), with two profiles — `violations`
+  (worst case: every signature needs formatting) and `clean` (incremental
+  rerun of a formatted codebase). `BenchmarkGofmtBaseline` runs the exact
+  `go/format.Source` call the gofmt binary makes over the same corpus, so
+  the ratio is apples-to-apples. Corpus files are guarded to be gofmt fixed
+  points. Measured on Go 1.25/linux-arm64: sigfmt with parsing is ~3.0×
+  gofmt on violations and ~2.2× on clean code; analysis alone is ~7.2 ms /
+  480 signatures (~15µs per signature). The <2× target remains open —
+  CPU profiles point at allocation pressure in extraction/rendering.
 - `gofmt -s` compatibility contract: `TestGoldenFilesAreGofmtSFixedPoints`
   verifies every golden file (the exact bytes sigfmt's suggested fixes
   produce) is a `gofmt -s` fixed point, checked against the real gofmt
