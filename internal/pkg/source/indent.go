@@ -24,14 +24,11 @@ func GetIndent(fset *token.FileSet, pos token.Pos) string {
 		return ""
 	}
 
+	// Invariant of go/token: the line start of pos's line is at or before
+	// pos itself, so this never slices backwards for parser-produced
+	// positions.
 	lineStart := f.LineStart(f.Line(pos))
-	lineStartOffset := f.Offset(lineStart)
-
-	if lineStartOffset > offset {
-		return ""
-	}
-
-	prefix := content[lineStartOffset:offset]
+	prefix := content[f.Offset(lineStart):offset]
 
 	var indent strings.Builder
 	for _, b := range prefix {
