@@ -192,7 +192,19 @@ To run the linter, use your custom binary:
 
 ### Standalone CLI
 
-The `sigfmt` binary can also be used directly without golangci-lint:
+The `sigfmt` binary can also be used directly without golangci-lint. Release
+builds are published for `linux`, `darwin`, and `windows` on `amd64`/`arm64`:
+
+```bash
+# From a release archive (see https://github.com/vsfedorenko/sigfmt/releases)
+curl -sSL https://github.com/vsfedorenko/sigfmt/releases/latest/download/sigfmt_linux_amd64.tar.gz | tar xz
+sudo install sigfmt /usr/local/bin/
+
+# Or build from source (any Go >= 1.25 toolchain)
+go install github.com/vsfedorenko/sigfmt/cmd/sigfmt@latest
+```
+
+Then run it on your project:
 
 ```bash
 # Run analysis on a package

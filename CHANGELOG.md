@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Release binaries via GoReleaser.** Tags now build cross-platform
+  archives (`linux`/`darwin`/`windows` × `amd64`/`arm64`, tar.gz — zip for
+  windows) with `checksums.txt` attached to the GitHub Release. The release
+  workflow also runs the test suite before building. First binary-bearing
+  release will be the next tag (previous releases shipped source only).
+  Foundation for the planned Homebrew tap / aqua entry.
+
 ### Fixed
 - **`//line` directives no longer crash the analyzer.** `GetIndent` called
   `File.LineStart(File.Line(pos))`, which panics with `invalid line number`
