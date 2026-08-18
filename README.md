@@ -255,6 +255,17 @@ This applies to:
 - Interface methods
 - Struct fields with function types
 
+#### Comment Preservation
+
+Signatures containing comments (`//` or `/* */`) inside the rewritten range
+are **left untouched**: the renderer rebuilds signatures from the AST, and a
+rewrite would silently drop those comments. Doc comments above a signature
+are outside the rewrite range and never affected — such signatures are
+formatted normally. This invariant is enforced by a black-box test
+(`TestCommentPreservationZeroLoss`) over a corpus of commented signatures in
+unusual positions: applying all suggested fixes must lose zero comments and
+keep the file parseable.
+
 #### 2. Reformat / Packing Stage
 **Goal:** Optimize vertical space for long signatures.
 
@@ -329,7 +340,7 @@ The linter calculates visual width considering:
 - Receiver length (for methods)
 - Type parameter length (for generics)
 - Return type length
-- Comment preservation
+- Comment preservation: signatures with internal comments are skipped entirely (see Comment Preservation above)
 
 **Example:**
 ```go

@@ -4,11 +4,11 @@ package length100
 
 // FunctionWithComments checks a function with comments inside the signature.
 // Linter should collapse this function since it fits on one line.
-// Comments inside the signature will be removed.
+// Signatures with internal comments are left untouched (comment preservation).
 func FunctionWithComments(
 	a int, // parameter a
 	b int, // parameter b
-) { // want "Signature can be formatted more compactly"
+) {
 }
 
 // InterfaceWithComments checks interface with comments.
@@ -19,5 +19,5 @@ type InterfaceWithComments interface {
 	Method(
 		a int, // comment for a
 		b int, // comment for b
-	) // want "Signature can be formatted more compactly"
+	)
 }

@@ -71,12 +71,17 @@ func (f *Formatter) originalText(readFile func(filename string) ([]byte, error),
 
 // Check determines if a signature needs formatting changes: it applies
 // the strategies and returns the new formatted text, or "" when no
-// change is warranted. A no-op guard suppresses the diagnostic when the
-// winning strategy's output is identical to the signature's current
-// source text modulo the first line's leading indentation — a fix that
-// would rewrite the source into what it already is must not be reported.
+// change is warranted. Two guards suppress the diagnostic:
+//
+//   - comment preservation: the renderer rebuilds the signature from the
+//     AST alone, so any comment inside the rewritten range would be
+//     silently dropped. Signatures whose original source contains a
+//     comment are left untouched.
+//   - no-op guard: a strategy whose output equals the existing source
+//     (modulo the first line's leading indentation) must not be reported.
+//
 // readFile is analysis.Pass.ReadFile in production and a file loader in
-// tests; when the source cannot be read the guard fails open (the
+// tests; when the source cannot be read the guards fail open (the
 // diagnostic is kept).
 func (f *Formatter) Check(readFile func(filename string) ([]byte, error), fset *token.FileSet, sig *domain.Signature) string {
 	newText := f.check(fset, sig)
@@ -87,10 +92,26 @@ func (f *Formatter) Check(readFile func(filename string) ([]byte, error), fset *
 	if !ok {
 		return newText // cannot verify — keep the diagnostic
 	}
+	if containsComment(original) {
+		return "" // rewriting would drop the comment — leave the signature alone
+	}
 	if normalizeFirstLineIndent(original) == normalizeFirstLineIndent(newText) {
 		return "" // no-op fix — the source is already in the target shape
 	}
 	return newText
+}
+
+// containsComment reports whether the signature's original source text
+// contains a line (`//`) or block (`/*`) comment marker. Signatures contain
+// only identifiers, types, and punctuation — never string literals — so the
+// textual scan cannot false-positive.
+func containsComment(src string) bool {
+	for i := 0; i+1 < len(src); i++ {
+		if src[i] == '/' && (src[i+1] == '/' || src[i+1] == '*') {
+			return true
+		}
+	}
+	return false
 }
 
 // normalizeFirstLineIndent trims leading whitespace of the first line: the
