@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Comment preservation (zero loss)**: signatures containing comments
+  inside the rewritten range are now left untouched instead of being
+  collapsed with the comments silently dropped. The renderer rebuilds
+  signatures from the AST, so any `//` or `/* */` comment between the
+  signature start and end would be lost by a rewrite; the analyzer now
+  skips such signatures entirely. Doc comments above a signature are
+  outside the rewrite range and unaffected. Enforced by the black-box
+  `TestCommentPreservationZeroLoss` corpus test: applying all suggested
+  fixes must lose zero comments and keep the output parseable. Existing
+  comment fixtures updated to the new semantics.
+
 ### Added
 - Performance benchmark suite (`make bench`): black-box benchmarks through
   the public analyzer API on a deterministic generated corpus (12 files × 40
