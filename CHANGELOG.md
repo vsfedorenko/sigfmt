@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- CLI smoke test suite (`cmd/sigfmt/cli_smoke_test.go`, 7 tests): the
+  released binary surface exercised end-to-end — clean package exits 0,
+  violations exit non-zero with the diagnostic, `-fix -diff` is a
+  preview mode (prints the patch, leaves files untouched, exits 0),
+  `-fix` rewrites in place and the re-check passes, comment-preservation
+  (#29) holds through the CLI (byte-identical file after `-fix`),
+  unknown flags fail loudly, and `-max-line-len` reaches the analyzer
+  through singlechecker (tight limit disables the collapse diagnostic).
+
+### Added
 - **Release binaries via GoReleaser.** Tags now build cross-platform
   archives (`linux`/`darwin`/`windows` × `amd64`/`arm64`, tar.gz — zip for
   windows) with `checksums.txt` attached to the GitHub Release. The release
