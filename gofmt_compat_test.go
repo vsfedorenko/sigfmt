@@ -34,7 +34,6 @@ func TestGoldenFilesAreGofmtSFixedPoints(t *testing.T) {
 	require.NotEmpty(t, goldenFiles, "no golden files found — testdata layout changed?")
 
 	for _, golden := range goldenFiles {
-		golden := golden
 		t.Run(filepath.Base(golden), func(t *testing.T) {
 			src, err := os.ReadFile(golden)
 			require.NoError(t, err, "read golden file")

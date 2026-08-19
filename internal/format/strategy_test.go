@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"github.com/vsfedorenko/sigfmt/internal/config"
 	"github.com/vsfedorenko/sigfmt/internal/domain"
 	"github.com/vsfedorenko/sigfmt/internal/render"

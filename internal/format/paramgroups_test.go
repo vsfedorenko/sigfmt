@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"github.com/vsfedorenko/sigfmt/internal/config"
 	"github.com/vsfedorenko/sigfmt/internal/domain"
 	"github.com/vsfedorenko/sigfmt/internal/render"
