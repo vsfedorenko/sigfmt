@@ -7,7 +7,10 @@ help: ## Show this help message
 	@sed -n 's/^[a-zA-Z0-9_-]*:.*##/&/p' ${MAKEFILE_LIST} | \
 		awk 'BEGIN {FS = ":.*##"}; {printf "  %-20s %s\n", $$1, $$2}'
 
-.PHONY: test
+.PHONY: mocks test
+mocks: ## Regenerate mockery mocks (.mockery.yml)
+	mockery
+
 test: ## Run all tests
 	@echo "Running tests..."
 	@go test -v ./...
