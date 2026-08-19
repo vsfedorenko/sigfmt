@@ -35,6 +35,7 @@ var glitchCorpus = []string{
 	"package g\n\nfunc OnlyVariadic(\n\trest ...map[string][]func(int) error,\n) {\n}\n",
 
 	// Curried function return type.
+	//nolint:dupword // "func() func()" is a legitimate curried type, not a typo
 	"package g\n\nfunc Curried(\n\tx int,\n) func() func() error {\n\treturn nil\n}\n",
 
 	// Struct field with func type (packing path).

@@ -9,10 +9,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"golang.org/x/tools/go/analysis"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/tools/go/analysis"
 )
 
 // commentFuzzCorpus is the deterministic corpus for comment preservation:

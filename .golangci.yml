@@ -1,4 +1,90 @@
-# golangci-lint configuration file
+# golangci-lint configuration
+# Docs: https://golangci-lint.run/docs/configuration/file/
 
 version: "2"
 
+run:
+  tests: true
+  go: "1.25"
+
+output:
+  formats:
+    text:
+      print-issued-lines: true
+      print-linter-name: true
+
+linters:
+  default: none
+  enable:
+    # Correctness / bugs
+    - govet                         # the standard vet suite
+    - staticcheck                   # honef.co/go/tools: broad correctness sweep
+    - errcheck                      # unchecked errors
+    - errorlint                     # error-wrapping hygiene (%w, errors.Is/As)
+    - ineffassign                   # dead assignments
+    - wastedassign                  # assigned but never read
+    - copyloopvar                  # redundant loop-var copies (Go 1.22+)
+    - makezero                     # append into zero-length slices made with a length
+
+    # Security
+    - gosec                         # CWE-oriented static analysis
+
+    # Style / maintainability
+    - revive                        # golint successor, configurable
+    - misspell                      # typos in comments
+    - dupword                       # repeated words ("the the")
+    - whitespace                    # stray blank lines
+    - unconvert                     # redundant type conversions
+    - predeclared                   # shadowing predeclared identifiers
+    - asciicheck                    # non-ASCII identifiers
+    - decorder                      # declaration order in files
+    - goconst                       # repeated string literals -> constants
+
+  settings:
+    revive:
+      rules:
+        - name: exported
+        - name: var-naming
+          disabled: true
+    goconst:
+      # Test corpora legitimately repeat type names ("int", "string") inside
+      # generated signature fixtures — the linter is for production strings.
+      ignore-tests: true
+    gosec:
+      excludes:
+        - G304 # file inclusion via variable: the analyzer walks user paths by design
+        - G301 # directory permissions: test fixtures only
+        - G306 # file permissions: test fixtures only
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - testdata
+    rules:
+      # Subprocess launching with variables is how the CLI/e2e tests work.
+      - path: _test\.go
+        linters:
+          - gosec
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+formatters:
+  enable:
+    - gci
+    - gofumpt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - localmodule
+  exclusions:
+    generated: lax
+    paths:
+      - testdata

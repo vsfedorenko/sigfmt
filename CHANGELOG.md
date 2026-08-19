@@ -8,6 +8,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- golangci-lint: replaced the empty config (default linters only) with a
+  full suite — staticcheck, govet, errcheck, errorlint, ineffassign,
+  wastedassign, copyloopvar, makezero, gosec, revive, misspell, dupword,
+  whitespace, unconvert, predeclared, asciicheck, decorder, goconst —
+  plus gci/gofumpt formatters. Tuned, not hacked: goconst ignores test
+  corpora (repeated type names in signature fixtures are data), gosec
+  excludes the file-permission/file-walk rules the analyzer needs by
+  design, subprocess rules apply only to tests, `testdata/` excluded.
+  Two real findings fixed: a redundant Go<1.22 loop-var copy, and a
+  `//nolint:dupword` on a legitimate `func() func()` curried-type fixture.
+  Zero issues on the expanded suite.
+
+## [Unreleased]
+
+### Changed
 - Test assertions migrated to testify exclusively: every manual
   `if got != want { t.Fatal }` comparison (~120 occurrences across 15
   test files) replaced with `assert`/`require` calls — `require` for
