@@ -204,6 +204,22 @@ sudo install sigfmt /usr/local/bin/
 go install github.com/vsfedorenko/sigfmt/cmd/sigfmt@latest
 ```
 
+#### Homebrew (macOS / Linux)
+
+The repository doubles as a Homebrew tap — the formula installs the
+prebuilt release binary:
+
+```bash
+brew tap vsfedorenko/sigfmt https://github.com/vsfedorenko/sigfmt
+brew install vsfedorenko/sigfmt/sigfmt
+```
+
+The formula declares `go` as a test-only dependency: the analyzer shells
+out to the `go` toolchain at runtime even in single-file mode, but your
+own project toolchain is used for real runs. Updates land automatically:
+every release regenerates `Formula/sigfmt.rb` from the published
+checksums and commits it to `main`.
+
 Then run it on your project:
 
 ```bash

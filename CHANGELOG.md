@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Homebrew install path: the repository now doubles as a tap
+  (`brew tap vsfedorenko/sigfmt https://github.com/vsfedorenko/sigfmt &&
+  brew install vsfedorenko/sigfmt/sigfmt`). `Formula/sigfmt.rb` installs
+  the prebuilt release binaries (darwin/linux × amd64/arm64) with
+  per-platform checksums; a release-time job regenerates it from the
+  published `checksums.txt`, so future versions update the formula
+  automatically.
+
 ## [1.2.1] - 2026-08-19
 
 ### Fixed
