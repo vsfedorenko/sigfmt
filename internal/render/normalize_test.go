@@ -5,6 +5,9 @@ import (
 	"go/parser"
 	"go/token"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestNormalizeSpacing verifies whitespace collapsing outside string
@@ -41,9 +44,8 @@ func TestNormalizeSpacing(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := normalizeSpacing(tt.in); got != tt.want {
-				t.Errorf("normalizeSpacing(%q) = %q, want %q", tt.in, got, tt.want)
-			}
+			got := normalizeSpacing(tt.in)
+			assert.Equal(t, tt.want, got, "normalizeSpacing(%q)", tt.in)
 		})
 	}
 }
@@ -56,9 +58,7 @@ func TestRenderer_Node_ArrayTypeWithLiteral(t *testing.T) {
 	src := "package p\n\nvar buf [unsafe.Sizeof(\"a  b\")]byte\n"
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, "x.go", src, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	var array *ast.ArrayType
 	ast.Inspect(f, func(n ast.Node) bool {
@@ -67,13 +67,9 @@ func TestRenderer_Node_ArrayTypeWithLiteral(t *testing.T) {
 		}
 		return true
 	})
-	if array == nil {
-		t.Fatal("no ArrayType found in source")
-	}
+	require.NotNil(t, array, "no ArrayType found in source")
 
 	got := New(8).Node(fset, array)
 	want := `[unsafe.Sizeof("a  b")]byte`
-	if got != want {
-		t.Fatalf("Node() = %q, want %q", got, want)
-	}
+	assert.Equal(t, want, got, "Node()")
 }

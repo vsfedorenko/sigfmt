@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -27,30 +30,21 @@ func TestGoldenFilesAreGofmtSFixedPoints(t *testing.T) {
 	gofmt := gofmtPath(t)
 
 	goldenFiles, err := filepath.Glob(filepath.Join(testdataDirName, "src", "*", goldenGlob))
-	if err != nil {
-		t.Fatalf("glob golden files: %v", err)
-	}
-	if len(goldenFiles) == 0 {
-		t.Fatal("no golden files found — testdata layout changed?")
-	}
+	require.NoError(t, err, "glob golden files")
+	require.NotEmpty(t, goldenFiles, "no golden files found — testdata layout changed?")
 
 	for _, golden := range goldenFiles {
 		golden := golden
 		t.Run(filepath.Base(golden), func(t *testing.T) {
 			src, err := os.ReadFile(golden)
-			if err != nil {
-				t.Fatalf("read golden file: %v", err)
-			}
+			require.NoError(t, err, "read golden file")
 
 			cmd := exec.Command(gofmt, "-s", golden)
 			out, err := cmd.Output()
-			if err != nil {
-				t.Fatalf("run gofmt -s: %v", err)
-			}
+			require.NoError(t, err, "run gofmt -s")
 
-			if string(out) != string(src) {
-				t.Errorf("%s is not a gofmt -s fixed point: run `gofmt -s -w %s` and commit the result", golden, golden)
-			}
+			assert.Equal(t, string(src), string(out),
+				"%s is not a gofmt -s fixed point: run `gofmt -s -w %s` and commit the result", golden, golden)
 		})
 	}
 }

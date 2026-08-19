@@ -3,6 +3,8 @@ package field
 import (
 	"go/ast"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestRenderNames(t *testing.T) {
@@ -25,9 +27,7 @@ func TestRenderNames(t *testing.T) {
 			}
 
 			got := RenderNames(idents)
-			if got != tt.want {
-				t.Errorf("RenderNames() = %q, want %q", got, tt.want)
-			}
+			assert.Equal(t, tt.want, got, "RenderNames()")
 		})
 	}
 }

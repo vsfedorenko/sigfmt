@@ -7,10 +7,12 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"golang.org/x/tools/go/analysis"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // commentFuzzCorpus is the deterministic corpus for comment preservation:
@@ -57,20 +59,14 @@ func TestCommentPreservationZeroLoss(t *testing.T) {
 		t.Run(fmt.Sprintf("case%02d", i), func(t *testing.T) {
 			dir := t.TempDir()
 			path := filepath.Join(dir, "fixture.go")
-			if err := os.WriteFile(path, []byte(src), 0o644); err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, os.WriteFile(path, []byte(src), 0o644))
 
 			analyzer := NewAnalyzer()
-			if err := analyzer.Flags.Parse(nil); err != nil {
-				t.Fatalf("parse flags: %v", err)
-			}
+			require.NoError(t, analyzer.Flags.Parse(nil), "parse flags")
 
 			fset := token.NewFileSet()
 			f, err := parser.ParseFile(fset, path, src, parser.ParseComments)
-			if err != nil {
-				t.Fatalf("fixture does not parse: %v", err)
-			}
+			require.NoError(t, err, "fixture does not parse")
 
 			type edit struct {
 				start, end int
@@ -94,9 +90,8 @@ func TestCommentPreservationZeroLoss(t *testing.T) {
 					}
 				},
 			}
-			if _, err := analyzer.Run(pass); err != nil {
-				t.Fatalf("run: %v", err)
-			}
+			_, err = analyzer.Run(pass)
+			require.NoError(t, err, "run")
 
 			// Apply edits from last to first so offsets stay valid.
 			out := src
@@ -105,19 +100,16 @@ func TestCommentPreservationZeroLoss(t *testing.T) {
 				out = out[:e.start] + e.newText + out[e.end:]
 			}
 
-			if got, want := countComments(out), countComments(src); got != want {
-				t.Errorf("comment loss: original has %d comment markers, formatted has %d\noriginal:\n%s\nformatted:\n%s",
-					want, got, src, out)
-			}
+			assert.Equal(t, countComments(src), countComments(out),
+				"comment loss: original markers vs formatted\noriginal:\n%s\nformatted:\n%s", src, out)
 
 			// The result must still parse — a fix must never break the file.
-			if _, err := parser.ParseFile(token.NewFileSet(), path, out, parser.ParseComments); err != nil {
-				t.Fatalf("formatted output does not parse: %v\n%s", err, out)
-			}
+			_, err = parser.ParseFile(token.NewFileSet(), path, out, parser.ParseComments)
+			require.NoError(t, err, "formatted output does not parse:\n%s", out)
 
 			// Case 8 (mixed): the clean signature must still be collapsed.
-			if i == len(commentFuzzCorpus)-1 && !strings.Contains(out, "func H(a int, b int) {") {
-				t.Errorf("clean signature was not collapsed alongside the commented one:\n%s", out)
+			if i == len(commentFuzzCorpus)-1 {
+				assert.Contains(t, out, "func H(a int, b int) {", "clean signature was not collapsed alongside the commented one:\n%s", out)
 			}
 		})
 	}

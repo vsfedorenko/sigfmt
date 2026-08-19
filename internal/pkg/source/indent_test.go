@@ -7,6 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetIndent(t *testing.T) {
@@ -42,21 +45,15 @@ func TestGetIndent(t *testing.T) {
 			// Create temp file
 			tmpDir := t.TempDir()
 			tmpFile := filepath.Join(tmpDir, "test.go")
-			if err := os.WriteFile(tmpFile, []byte(tt.source), 0o644); err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, os.WriteFile(tmpFile, []byte(tt.source), 0o644))
 
 			// Parse file
 			fset := token.NewFileSet()
 			f, err := parser.ParseFile(fset, tmpFile, nil, 0)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 
 			// Use the position of the first declaration
-			if len(f.Decls) == 0 {
-				t.Fatal("No declarations found")
-			}
+			require.NotEmpty(t, f.Decls, "No declarations found")
 
 			// For first test (func), use func position
 			// For others (struct fields), find the field position
@@ -74,15 +71,11 @@ func TestGetIndent(t *testing.T) {
 				}
 			}
 
-			if !pos.IsValid() {
-				t.Fatal("Could not find valid position")
-			}
+			require.True(t, pos.IsValid(), "Could not find valid position")
 
 			got := GetIndent(fset, pos)
 
-			if got != tt.want {
-				t.Errorf("GetIndent() = %q, want %q", got, tt.want)
-			}
+			assert.Equal(t, tt.want, got, "GetIndent()")
 		})
 	}
 }

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/tools/go/analysis"
 )
 
@@ -44,16 +46,15 @@ func TestLineDirectivesDoNotCrash(t *testing.T) {
 		t.Run(filepath.Join("case", string(rune('A'+i))), func(t *testing.T) {
 			out := runAndFix(t, src)
 
-			if _, err := parser.ParseFile(token.NewFileSet(), "out.go", out, parser.ParseComments); err != nil {
-				t.Fatalf("formatted output does not parse: %v\n%s", err, out)
-			}
+			_, err := parser.ParseFile(token.NewFileSet(), "out.go", out, parser.ParseComments)
+			require.NoError(t, err, "formatted output does not parse:\n%s", out)
 
 			// //line directives must survive the fix untouched.
-			if strings.Contains(src, "//line") && !strings.Contains(out, "//line") {
-				t.Errorf("//line directive was dropped by the fix:\n%s", out)
+			if strings.Contains(src, "//line") {
+				assert.Contains(t, out, "//line", "//line directive was dropped by the fix:\n%s", out)
 			}
-			if strings.Contains(src, "/*line") && !strings.Contains(out, "/*line") {
-				t.Errorf("/*line*/ directive was dropped by the fix:\n%s", out)
+			if strings.Contains(src, "/*line") {
+				assert.Contains(t, out, "/*line", "/*line*/ directive was dropped by the fix:\n%s", out)
 			}
 		})
 	}
@@ -66,21 +67,13 @@ func TestLineDirectiveCollapseAndStability(t *testing.T) {
 	src := lineDirectiveCorpus[0]
 
 	out, editCount := runAndFixCount(t, src)
-	if editCount == 0 {
-		t.Fatal("first run produced no edits — //line must not disable formatting")
-	}
-	if !strings.Contains(out, "func F(a int, b string) error {") {
-		t.Fatalf("signature after //line was not collapsed:\n%s", out)
-	}
-	if !strings.Contains(out, "//line other.go:100") {
-		t.Fatalf("//line directive did not survive the fix:\n%s", out)
-	}
+	require.NotZero(t, editCount, "first run produced no edits — //line must not disable formatting")
+	assert.Contains(t, out, "func F(a int, b string) error {", "signature after //line was not collapsed:\n%s", out)
+	assert.Contains(t, out, "//line other.go:100", "//line directive did not survive the fix:\n%s", out)
 
 	// Second run over the fixed source must be a no-op.
 	_, editCount = runAndFixCount(t, out)
-	if editCount != 0 {
-		t.Fatalf("second run still reports edits (oscillation)")
-	}
+	require.Zero(t, editCount, "second run still reports edits (oscillation)")
 }
 
 // TestBuildIgnoredFileSkipped proves the file-argument escape hatch is
@@ -102,9 +95,7 @@ func TestBuildIgnoredFileSkipped(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			_, edits := runAndFixCount(t, tc.src)
-			if edits != tc.wantEdits {
-				t.Errorf("edits = %d, want %d", edits, tc.wantEdits)
-			}
+			assert.Equal(t, tc.wantEdits, edits, "edit count")
 		})
 	}
 }
@@ -122,20 +113,14 @@ func runAndFixCount(t *testing.T, src string) (string, int) {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "fixture.go")
-	if err := os.WriteFile(path, []byte(src), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(path, []byte(src), 0o644))
 
 	analyzer := NewAnalyzer()
-	if err := analyzer.Flags.Parse(nil); err != nil {
-		t.Fatalf("parse flags: %v", err)
-	}
+	require.NoError(t, analyzer.Flags.Parse(nil), "parse flags")
 
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, path, src, parser.ParseComments)
-	if err != nil {
-		t.Fatalf("fixture does not parse: %v", err)
-	}
+	require.NoError(t, err, "fixture does not parse")
 
 	type edit struct {
 		start, end int
@@ -159,9 +144,8 @@ func runAndFixCount(t *testing.T, src string) (string, int) {
 			}
 		},
 	}
-	if _, err := analyzer.Run(pass); err != nil {
-		t.Fatalf("run: %v", err)
-	}
+	_, err = analyzer.Run(pass)
+	require.NoError(t, err, "run")
 
 	out := src
 	for j := len(edits) - 1; j >= 0; j-- {

@@ -23,11 +23,15 @@ package main
  */
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -42,18 +46,15 @@ func buildCustomGCL(t *testing.T) string {
 	}
 
 	bin, err := filepath.Abs(filepath.Join("..", "example", "custom-gcl"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	// Reuse an existing binary when present (developer machines); build
 	// fresh in CI.
 	if _, statErr := os.Stat(bin); statErr != nil {
 		// Same command `make build-example` runs.
 		cmd := exec.Command("golangci-lint", "custom")
 		cmd.Dir = filepath.Join(mustRepoRoot(t), "example")
-		if out, buildErr := cmd.CombinedOutput(); buildErr != nil {
-			t.Fatalf("golangci-lint custom: %v\n%s", buildErr, out)
-		}
+		out, buildErr := cmd.CombinedOutput()
+		require.NoError(t, buildErr, "golangci-lint custom: %s", out)
 	}
 	return bin
 }
@@ -61,9 +62,7 @@ func buildCustomGCL(t *testing.T) string {
 func mustRepoRoot(t *testing.T) string {
 	t.Helper()
 	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	return filepath.Clean(filepath.Join(wd, ".."))
 }
 
@@ -94,9 +93,7 @@ linters:
 		"guard.go": "package gclprobe\n\nfunc Guarded(\n\ta int, // keep me\n\tb string,\n) error {\n\treturn nil\n}\n",
 	}
 	for name, body := range files {
-		if err := os.WriteFile(filepath.Join(root, name), []byte(body), 0o600); err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, os.WriteFile(filepath.Join(root, name), []byte(body), 0o600))
 	}
 	return root
 }
@@ -108,9 +105,9 @@ func runGCL(t *testing.T, bin, dir string, args ...string) string {
 	out, err := cmd.CombinedOutput()
 	// golangci exits 1 on issues — expected here; only crash on other failures.
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); !ok || exitErr.ExitCode() > 1 {
-			t.Fatalf("custom-gcl %v: %v\n%s", args, err, out)
-		}
+		var exitErr *exec.ExitError
+		require.True(t, errors.As(err, &exitErr) && exitErr.ExitCode() <= 1,
+			"custom-gcl %v: %v\n%s", args, err, out)
 	}
 	return string(out)
 }
@@ -121,37 +118,24 @@ func TestPluginPath_FixCycleOnThirdPartyModule(t *testing.T) {
 
 	// 1. diagnostics fire on the violation, none on the commented file
 	out := runGCL(t, bin, root, "run", "./...")
-	if !strings.Contains(out, "viol.go") {
-		t.Fatalf("expected a diagnostic in viol.go:\n%s", out)
-	}
-	if strings.Contains(out, "guard.go") {
-		t.Fatalf("commented signature must not be reported:\n%s", out)
-	}
+	assert.Contains(t, out, "viol.go", "expected a diagnostic in viol.go:\n%s", out)
+	assert.NotContains(t, out, "guard.go", "commented signature must not be reported:\n%s", out)
 
 	// 2. --fix applies in place
 	runGCL(t, bin, root, "run", "--fix", "./...")
 	fixed, err := os.ReadFile(filepath.Join(root, "viol.go"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(fixed), "func Long(a int, b string) error {") {
-		t.Fatalf("--fix did not collapse the signature:\n%s", fixed)
-	}
+	require.NoError(t, err)
+	assert.Contains(t, string(fixed), "func Long(a int, b string) error {", "--fix did not collapse the signature:\n%s", fixed)
 
 	// 3. the commented file is byte-identical after --fix
 	guard, err := os.ReadFile(filepath.Join(root, "guard.go"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(guard), "// keep me") || strings.Contains(string(guard), "func Guarded(a int, b string)") {
-		t.Fatalf("comment preservation broke through the plugin path:\n%s", guard)
-	}
+	require.NoError(t, err)
+	assert.Contains(t, string(guard), "// keep me", "comment preservation broke through the plugin path:\n%s", guard)
+	assert.NotContains(t, string(guard), "func Guarded(a int, b string)", "comment preservation broke through the plugin path:\n%s", guard)
 
 	// 4. re-run is clean (idempotence)
 	out = runGCL(t, bin, root, "run", "./...")
-	if strings.Contains(out, "sigfmt") {
-		t.Fatalf("re-run after --fix must be clean:\n%s", out)
-	}
+	assert.NotContains(t, out, "sigfmt", "re-run after --fix must be clean:\n%s", out)
 }
 
 func TestPluginPath_BulkModuleFullCount(t *testing.T) {
@@ -159,21 +143,15 @@ func TestPluginPath_BulkModuleFullCount(t *testing.T) {
 	root := writeProbeModule(t)
 
 	bulk := filepath.Join(root, "bulk")
-	if err := os.MkdirAll(bulk, 0o755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(bulk, 0o755))
 	for i := 0; i < 30; i++ {
 		body := "package bulk\n\nfunc F" + itoa(i) + "(\n\ta int,\n\tb string,\n) error {\n\treturn nil\n}\n"
-		if err := os.WriteFile(filepath.Join(bulk, "b"+itoa(i)+".go"), []byte(body), 0o600); err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, os.WriteFile(filepath.Join(bulk, "b"+itoa(i)+".go"), []byte(body), 0o600))
 	}
 
 	// golangci's default caps (max-same-issues=3) must be lifted for the count
 	out := runGCL(t, bin, root, "run", "--max-same-issues=0", "--max-issues-per-linter=0", "./...")
-	if got := strings.Count(out, "bulk/b"); got != 30 {
-		t.Fatalf("expected 30 bulk diagnostics, got %d:\n%s", got, out)
-	}
+	assert.Equal(t, 30, strings.Count(out, "bulk/b"), "expected 30 bulk diagnostics:\n%s", out)
 }
 
 func itoa(i int) string {

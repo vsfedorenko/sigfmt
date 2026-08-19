@@ -7,6 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestGetIndentEdgeCases covers the defensive branches of GetIndent that the
@@ -18,46 +21,32 @@ func TestGetIndentEdgeCases(t *testing.T) {
 		t.Helper()
 		dir := t.TempDir()
 		path := filepath.Join(dir, "fixture.go")
-		if err := os.WriteFile(path, []byte(src), 0o644); err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, os.WriteFile(path, []byte(src), 0o644))
 		fset := token.NewFileSet()
 		f, err := parser.ParseFile(fset, path, nil, 0)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		return path, fset, f
 	}
 
 	t.Run("UnknownPosition", func(t *testing.T) {
 		// A FileSet with no files cannot resolve any position.
 		fset := token.NewFileSet()
-		if got := GetIndent(fset, token.Pos(1000)); got != "" {
-			t.Errorf("GetIndent(unknown pos) = %q, want empty", got)
-		}
+		assert.Empty(t, GetIndent(fset, token.Pos(1000)), "GetIndent(unknown pos) must be empty")
 	})
 
 	t.Run("UnreadableFile", func(t *testing.T) {
 		path, fset, f := writeFixture(t, "package main\n\ntype S struct {\n\tField int\n}\n")
-		if err := os.Remove(path); err != nil {
-			t.Fatal(err)
-		}
-		if got := GetIndent(fset, f.Pos()); got != "" {
-			t.Errorf("GetIndent(unreadable file) = %q, want empty", got)
-		}
+		require.NoError(t, os.Remove(path))
+		assert.Empty(t, GetIndent(fset, f.Pos()), "GetIndent(unreadable file) must be empty")
 	})
 
 	t.Run("PositionPastEOF", func(t *testing.T) {
 		// Shrink the file after parsing so a late position's offset is
 		// beyond the (now shorter) content length.
 		path, fset, f := writeFixture(t, "package main\n\ntype S struct {\n\tVeryLongFieldName int\n}\n")
-		if err := os.WriteFile(path, []byte("package main\n"), 0o644); err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, os.WriteFile(path, []byte("package main\n"), 0o644))
 		end := f.End() // last valid offset of the ORIGINAL content
-		if got := GetIndent(fset, end); got != "" {
-			t.Errorf("GetIndent(past EOF) = %q, want empty", got)
-		}
+		assert.Empty(t, GetIndent(fset, end), "GetIndent(past EOF) must be empty")
 	})
 
 	t.Run("IndentStopsAtNonWhitespace", func(t *testing.T) {
@@ -73,11 +62,7 @@ func TestGetIndentEdgeCases(t *testing.T) {
 			}
 			return true
 		})
-		if !pos.IsValid() {
-			t.Fatal("break statement not found")
-		}
-		if got := GetIndent(fset, pos); got != "		" {
-			t.Errorf("GetIndent(break indent) = %q, want %q", got, "		")
-		}
+		require.True(t, pos.IsValid(), "break statement not found")
+		assert.Equal(t, "		", GetIndent(fset, pos), "GetIndent(break indent)")
 	})
 }
