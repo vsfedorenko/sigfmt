@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Testing stack standardised on testify + mockery: default `.mockery.yml`
+  (testify template, in-package `mocks_test.go`), `make mocks` target,
+  committed generated mock for the `format.Strategy` port. New
+  orchestrator tests for `Formatter.check` (previously covered only via
+  concrete strategies): first-applied-wins ordering, no-strategy empty
+  result, nil-params short-circuit — pinned with the generated mock.
+  CLAUDE.md documents the convention. Note: testify v1.11 exposes
+  `mock.Anything` as a constant (no call parens).
+
+## [Unreleased]
+
 ### Added
 - Homebrew install path: the repository now doubles as a tap
   (`brew tap vsfedorenko/sigfmt https://github.com/vsfedorenko/sigfmt &&
