@@ -1,6 +1,10 @@
 package text
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestVisualLength(t *testing.T) {
 	tests := []struct {
@@ -20,9 +24,8 @@ func TestVisualLength(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := VisualLength(tt.input, tt.tabWidth); got != tt.want {
-				t.Errorf("VisualLength(%q, %d) = %d, want %d", tt.input, tt.tabWidth, got, tt.want)
-			}
+			got := VisualLength(tt.input, tt.tabWidth)
+			assert.Equal(t, tt.want, got, "VisualLength(%q, %d)", tt.input, tt.tabWidth)
 		})
 	}
 }

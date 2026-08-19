@@ -5,6 +5,9 @@ import (
 	"go/token"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // multiNameFieldCorpus pins the destructive-fix class found by hand-probing
@@ -74,26 +77,21 @@ func TestMultiNameStructFieldFixKeepsAllNames(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			fixed := applyAllFixes(t, tc.src)
 
-			if _, err := parser.ParseFile(token.NewFileSet(), "fixed.go", fixed, parser.ParseComments); err != nil {
-				t.Fatalf("fixed output does not parse: %v\n%s", err, fixed)
-			}
+			_, err := parser.ParseFile(token.NewFileSet(), "fixed.go", fixed, parser.ParseComments)
+			require.NoError(t, err, "fixed output does not parse:\n%s", fixed)
 
 			// Every declared name must still be present in the fixed text.
 			// Names are declared in the corpus entries themselves; extract
 			// them by requiring the exact joined form the fix must render.
 			wantNames := multiNameWant(t, tc.src)
 			for _, name := range wantNames {
-				if !strings.Contains(fixed, name) {
-					t.Errorf("field name %q was dropped by the fix:\noriginal:\n%s\nfixed:\n%s", name, tc.src, fixed)
-				}
+				assert.Contains(t, fixed, name, "field name dropped by the fix:\noriginal:\n%s\nfixed:\n%s", tc.src, fixed)
 			}
 
 			// Idempotence: a second pass over the fixed text must not
 			// change it further.
 			again := applyAllFixes(t, fixed)
-			if again != fixed {
-				t.Errorf("fix is not idempotent:\nfirst:\n%s\nsecond:\n%s", fixed, again)
-			}
+			assert.Equal(t, fixed, again, "fix is not idempotent (second pass changed the output)")
 		})
 	}
 }
@@ -118,6 +116,6 @@ func multiNameWant(t *testing.T, src string) []string {
 		}
 		return strings.Fields(head)
 	}
-	t.Fatalf("fixture declares no func-typed field:\n%s", src)
+	require.FailNow(t, "fixture declares no func-typed field", src)
 	return nil
 }

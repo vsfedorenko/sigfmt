@@ -6,6 +6,9 @@ import (
 	"go/token"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/vsfedorenko/sigfmt/internal/astinfo"
 	"github.com/vsfedorenko/sigfmt/internal/config"
 	"github.com/vsfedorenko/sigfmt/internal/domain"
@@ -17,9 +20,7 @@ func parseFirstFuncSig(t *testing.T, src string) (*token.FileSet, *domain.Signat
 	t.Helper()
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, "src.go", src, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	fd := f.Decls[0].(*ast.FuncDecl)
 	cfg := config.New(nil)
 	renderer := render.New(cfg.TabWidth)
@@ -40,9 +41,8 @@ func TestCheckWithSource_NoOpGuard(t *testing.T) {
 	cfg := config.New(nil)
 	f := New(cfg, render.New(cfg.TabWidth))
 
-	if got := f.Check(readFileOf(source), fset, sig); got != "" {
-		t.Errorf("no-op guard failed: got fix\n%s", got)
-	}
+	got := f.Check(readFileOf(source), fset, sig)
+	assert.Empty(t, got, "no-op guard failed: got fix\n%s", got)
 }
 
 // A genuinely collapsible signature must still produce the collapsed fix.
@@ -53,12 +53,8 @@ func TestCheckWithSource_CollapseStillReported(t *testing.T) {
 	f := New(cfg, render.New(cfg.TabWidth))
 
 	got := f.Check(readFileOf(source), fset, sig)
-	if got == "" {
-		t.Fatal("expected collapse fix, got none")
-	}
-	if got != "func F(a int, b string) error" {
-		t.Errorf("unexpected fix: %q", got)
-	}
+	require.NotEmpty(t, got, "expected collapse fix, got none")
+	assert.Equal(t, "func F(a int, b string) error", got, "unexpected fix")
 }
 
 // When readFile cannot serve the file, the diagnostic must be kept
@@ -70,9 +66,8 @@ func TestCheckWithSource_UnreadableSourceKeepsDiagnostic(t *testing.T) {
 	f := New(cfg, render.New(cfg.TabWidth))
 
 	failing := func(string) ([]byte, error) { return nil, errUnavailable }
-	if got := f.Check(failing, fset, sig); got == "" {
-		t.Error("unreadable source must keep the diagnostic")
-	}
+	got := f.Check(failing, fset, sig)
+	assert.NotEmpty(t, got, "unreadable source must keep the diagnostic")
 }
 
 var errUnavailable = errUnavailableError{}

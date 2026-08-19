@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/tools/go/analysis"
 )
 
@@ -37,12 +39,8 @@ func benchCorpora(tb testing.TB) []benchProfile {
 		violations: writeBenchCorpus,
 		clean:      writeBenchCorpusClean,
 	} {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			tb.Fatalf("mkdir corpus: %v", err)
-		}
-		if err := write(dir); err != nil {
-			tb.Fatalf("write corpus: %v", err)
-		}
+		require.NoError(tb, os.MkdirAll(dir, 0o755), "mkdir corpus")
+		require.NoError(tb, write(dir), "write corpus")
 	}
 	tb.Cleanup(func() {
 		_ = os.RemoveAll(violations)
@@ -55,18 +53,12 @@ func benchCorpora(tb testing.TB) []benchProfile {
 func benchSources(tb testing.TB, dir string) (paths []string, sources map[string][]byte) {
 	tb.Helper()
 	paths, err := filepath.Glob(filepath.Join(dir, "*.go"))
-	if err != nil {
-		tb.Fatalf("glob: %v", err)
-	}
-	if len(paths) == 0 {
-		tb.Fatalf("corpus is empty: %s", dir)
-	}
+	require.NoError(tb, err, "glob")
+	require.NotEmpty(tb, paths, "corpus is empty: %s", dir)
 	sources = map[string][]byte{}
 	for _, path := range paths {
 		src, err := os.ReadFile(path)
-		if err != nil {
-			tb.Fatalf("read %s: %v", path, err)
-		}
+		require.NoError(tb, err, "read %s", path)
 		sources[path] = src
 	}
 	return paths, sources
@@ -188,12 +180,8 @@ func TestBenchCorpusIsGofmtClean(t *testing.T) {
 		for _, path := range paths {
 			src := sources[path]
 			formatted, err := format.Source(src)
-			if err != nil {
-				t.Fatalf("format %s: %v", path, err)
-			}
-			if !bytes.Equal(src, formatted) {
-				t.Errorf("corpus file %s is not gofmt-clean; regenerate the corpus generator output", path)
-			}
+			require.NoError(t, err, "format %s", path)
+			assert.True(t, bytes.Equal(src, formatted), "corpus file %s is not gofmt-clean; regenerate the corpus generator output", path)
 		}
 	}
 }

@@ -8,6 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Test assertions migrated to testify exclusively: every manual
+  `if got != want { t.Fatal }` comparison (~120 occurrences across 15
+  test files) replaced with `assert`/`require` calls — `require` for
+  failures that void the rest of a test, `assert` for accumulating
+  checks. Interface doubles driven strictly via mockery `EXPECT()`.
+  Benchmark functions keep `b.Fatal` (not test assertions). No test
+  logic changed; analysistest `// want` fixtures untouched.
+
+## [Unreleased]
+
+### Changed
 - Testing stack standardised on testify + mockery: default `.mockery.yml`
   (testify template, in-package `mocks_test.go`), `make mocks` target,
   committed generated mock for the `format.Strategy` port. New

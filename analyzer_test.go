@@ -2,6 +2,8 @@ package sigfmt
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseParamGroupsFlag(t *testing.T) {
@@ -75,9 +77,7 @@ func TestParseParamGroupsFlag(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := parseParamGroupsFlag(tt.input)
-			if !equalGroups(got, tt.want) {
-				t.Errorf("parseParamGroupsFlag(%q) = %v, want %v", tt.input, got, tt.want)
-			}
+			assert.True(t, equalGroups(got, tt.want), "parseParamGroupsFlag(%q) = %v, want %v", tt.input, got, tt.want)
 		})
 	}
 }
@@ -94,9 +94,7 @@ func TestNewAnalyzerFlags(t *testing.T) {
 		"param-groups",
 	}
 	for _, name := range expectedFlags {
-		if a.Flags.Lookup(name) == nil {
-			t.Errorf("Analyzer.Flags missing flag: %s", name)
-		}
+		assert.NotNil(t, a.Flags.Lookup(name), "Analyzer.Flags missing flag: %s", name)
 	}
 }
 

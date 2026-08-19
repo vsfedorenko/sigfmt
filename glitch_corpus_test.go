@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/tools/go/analysis"
 )
 
@@ -52,20 +54,14 @@ func applyAllFixes(t *testing.T, src string) string {
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "glitch.go")
-	if err := os.WriteFile(path, []byte(src), 0o600); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(path, []byte(src), 0o600))
 
 	analyzer := NewAnalyzer()
-	if err := analyzer.Flags.Parse(nil); err != nil {
-		t.Fatalf("parse flags: %v", err)
-	}
+	require.NoError(t, analyzer.Flags.Parse(nil), "parse flags")
 
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, path, src, parser.ParseComments)
-	if err != nil {
-		t.Fatalf("fixture does not parse: %v", err)
-	}
+	require.NoError(t, err, "fixture does not parse")
 
 	type edit struct {
 		start, end int
@@ -89,9 +85,8 @@ func applyAllFixes(t *testing.T, src string) string {
 			}
 		},
 	}
-	if _, err := analyzer.Run(pass); err != nil {
-		t.Fatalf("run: %v", err)
-	}
+	_, err = analyzer.Run(pass)
+	require.NoError(t, err, "run")
 
 	out := src
 	for i := len(edits) - 1; i >= 0; i-- {
@@ -111,24 +106,17 @@ func TestGlitchCorpus_FixCycleInvariants(t *testing.T) {
 
 			// (1) parses
 			fset := token.NewFileSet()
-			if _, err := parser.ParseFile(fset, "fixed.go", fixed, parser.ParseComments); err != nil {
-				t.Fatalf("fixed output does not parse: %v\n--- fixed ---\n%s", err, fixed)
-			}
+			_, err := parser.ParseFile(fset, "fixed.go", fixed, parser.ParseComments)
+			require.NoError(t, err, "fixed output does not parse:\n--- fixed ---\n%s", fixed)
 
 			// (2) gofmt fixed point
 			formatted, err := format.Source([]byte(fixed))
-			if err != nil {
-				t.Fatalf("gofmt rejects fixed output: %v\n--- fixed ---\n%s", err, fixed)
-			}
-			if string(formatted) != fixed {
-				t.Errorf("fixed output is not a gofmt fixed point:\n--- got ---\n%s--- want ---\n%s", fixed, formatted)
-			}
+			require.NoError(t, err, "gofmt rejects fixed output:\n--- fixed ---\n%s", fixed)
+			assert.Equal(t, fixed, string(formatted), "fixed output is not a gofmt fixed point")
 
 			// (3) idempotence: second pass proposes nothing
 			second := applyAllFixes(t, fixed)
-			if second != fixed {
-				t.Errorf("second pass is not a no-op:\n--- after 1st ---\n%s--- after 2nd ---\n%s", fixed, second)
-			}
+			assert.Equal(t, fixed, second, "second pass is not a no-op")
 		})
 	}
 }
@@ -138,12 +126,9 @@ func TestGlitchCorpus_FixCycleInvariants(t *testing.T) {
 func TestGlitchCorpus_OriginalsAreValid(t *testing.T) {
 	for i, src := range glitchCorpus {
 		fset := token.NewFileSet()
-		if _, err := parser.ParseFile(fset, "src.go", src, parser.ParseComments); err != nil {
-			t.Errorf("%s: corpus entry does not parse: %v", corpusName(i), err)
-		}
-		if !strings.HasPrefix(src, "package g") {
-			t.Errorf("%s: corpus entry missing package clause", corpusName(i))
-		}
+		_, err := parser.ParseFile(fset, "src.go", src, parser.ParseComments)
+		require.NoErrorf(t, err, "%s: corpus entry does not parse", corpusName(i))
+		assert.Truef(t, strings.HasPrefix(src, "package g"), "%s: corpus entry missing package clause", corpusName(i))
 	}
 }
 
@@ -178,18 +163,12 @@ func TestGlitchCorpus_FixedOutputCompiles(t *testing.T) {
 		t.Run(corpusName(i), func(t *testing.T) {
 			fixed := applyAllFixes(t, src)
 			dir := t.TempDir()
-			if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module glitch.test\n\ngo 1.25\n"), 0o600); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.WriteFile(filepath.Join(dir, "g.go"), []byte(fixed), 0o600); err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module glitch.test\n\ngo 1.25\n"), 0o600))
+			require.NoError(t, os.WriteFile(filepath.Join(dir, "g.go"), []byte(fixed), 0o600))
 			cmd := exec.Command("go", "vet", "./...")
 			cmd.Dir = dir
 			out, err := cmd.CombinedOutput()
-			if err != nil {
-				t.Fatalf("fixed output does not type-check (go vet): %v\n%s\n--- fixed ---\n%s", err, out, fixed)
-			}
+			require.NoError(t, err, "fixed output does not type-check (go vet): %s\n--- fixed ---\n%s", out, fixed)
 		})
 	}
 }

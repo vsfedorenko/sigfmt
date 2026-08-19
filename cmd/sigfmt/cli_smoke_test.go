@@ -1,11 +1,15 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // CLI smoke tests exercise the released binary surface: exit codes,
@@ -19,25 +23,17 @@ const binDir = "../../.testbin"
 // buildCLI builds the sigfmt binary once for the whole test run.
 func buildCLI(t *testing.T) string {
 	t.Helper()
-	if err := os.MkdirAll(binDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.MkdirAll(binDir, 0o755))
 	t.Cleanup(func() { _ = os.RemoveAll(binDir) })
 	bin := filepath.Join(binDir, "sigfmt-test")
 	abs, err := filepath.Abs(bin)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	build := exec.Command("go", "build", "-o", abs, ".")
 	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	build.Dir = wd
 	out, err := build.CombinedOutput()
-	if err != nil {
-		t.Fatalf("build CLI: %v\n%s", err, out)
-	}
+	require.NoError(t, err, "build CLI: %s", out)
 	return abs
 }
 
@@ -46,17 +42,11 @@ func buildCLI(t *testing.T) string {
 func writePkg(t *testing.T, files map[string]string) string {
 	t.Helper()
 	root := t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, "go.mod"), []byte("module smoke.test\n\ngo 1.25\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, os.WriteFile(filepath.Join(root, "go.mod"), []byte("module smoke.test\n\ngo 1.25\n"), 0o600))
 	for name, body := range files {
 		path := filepath.Join(root, name)
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+		require.NoError(t, os.WriteFile(path, []byte(body), 0o600))
 	}
 	return root
 }
@@ -67,10 +57,11 @@ func runCLI(t *testing.T, bin, dir string, args ...string) (string, int) {
 	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	code := 0
-	if exitErr, ok := err.(*exec.ExitError); ok {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
 		code = exitErr.ExitCode()
-	} else if err != nil {
-		t.Fatalf("run CLI: %v\n%s", err, out)
+	} else {
+		require.NoError(t, err, "run CLI: %s", out)
 	}
 	return string(out), code
 }
@@ -105,12 +96,8 @@ func TestCLI_CleanPackageExitsZero(t *testing.T) {
 	root := writePkg(t, map[string]string{"clean/clean.go": srcClean})
 
 	out, code := runCLI(t, bin, root, "./clean")
-	if code != 0 {
-		t.Fatalf("clean package must exit 0, got %d\n%s", code, out)
-	}
-	if strings.Contains(strings.ToLower(out), "signature") {
-		t.Fatalf("clean package must produce no diagnostics:\n%s", out)
-	}
+	require.Zero(t, code, "clean package must exit 0:\n%s", out)
+	assert.NotContains(t, strings.ToLower(out), "signature", "clean package must produce no diagnostics:\n%s", out)
 }
 
 func TestCLI_ViolationsExitNonZero(t *testing.T) {
@@ -118,12 +105,8 @@ func TestCLI_ViolationsExitNonZero(t *testing.T) {
 	root := writePkg(t, map[string]string{"viol/viol.go": srcViolations})
 
 	out, code := runCLI(t, bin, root, "./viol")
-	if code == 0 {
-		t.Fatalf("violations must exit non-zero:\n%s", out)
-	}
-	if !strings.Contains(out, "Signature can be formatted more compactly") {
-		t.Fatalf("expected the diagnostic in output:\n%s", out)
-	}
+	require.NotZero(t, code, "violations must exit non-zero:\n%s", out)
+	assert.Contains(t, out, "Signature can be formatted more compactly", "expected the diagnostic in output:\n%s", out)
 }
 
 func TestCLI_DiffDoesNotModifyFiles(t *testing.T) {
@@ -135,20 +118,12 @@ func TestCLI_DiffDoesNotModifyFiles(t *testing.T) {
 	// Contract (documented in the editor-integration recipes): -diff
 	// prints the proposed changes without applying them and exits 0 —
 	// it is a preview mode, not a check.
-	if code != 0 {
-		t.Fatalf("-diff must exit 0 (preview mode), got %d\n%s", code, out)
-	}
+	require.Zero(t, code, "-diff must exit 0 (preview mode):\n%s", out)
 
 	after, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(after) != srcViolations {
-		t.Fatalf("-diff must not modify the file:\n%s", after)
-	}
-	if !strings.Contains(out, "func Long(a int, b string) error {") {
-		t.Fatalf("-diff must print the proposed fix:\n%s", out)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, srcViolations, string(after), "-diff must not modify the file:\n%s", after)
+	assert.Contains(t, out, "func Long(a int, b string) error {", "-diff must print the proposed fix:\n%s", out)
 }
 
 func TestCLI_FixRewritesFile(t *testing.T) {
@@ -165,17 +140,12 @@ func TestCLI_FixRewritesFile(t *testing.T) {
 	}
 
 	after, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(after), "func Long(a int, b string) error {") {
-		t.Fatalf("-fix must collapse the signature in place:\n%s", after)
-	}
+	require.NoError(t, err)
+	assert.Contains(t, string(after), "func Long(a int, b string) error {", "-fix must collapse the signature in place:\n%s", after)
 
 	// Re-run on the fixed file: clean, exit 0.
-	if _, code := runCLI(t, bin, root, "./viol"); code != 0 {
-		t.Fatalf("fixed package must pass the re-check")
-	}
+	_, code = runCLI(t, bin, root, "./viol")
+	require.Zero(t, code, "fixed package must pass the re-check")
 }
 
 func TestCLI_CommentedSignatureLeftAlone(t *testing.T) {
@@ -186,21 +156,14 @@ func TestCLI_CommentedSignatureLeftAlone(t *testing.T) {
 	path := filepath.Join(root, "guard", "guard.go")
 
 	out, code := runCLI(t, bin, root, "./guard")
-	if code != 0 {
-		t.Fatalf("commented signature must not be a violation:\n%s", out)
-	}
+	require.Zero(t, code, "commented signature must not be a violation:\n%s", out)
 
-	if _, code := runCLI(t, bin, root, "-fix", "./guard"); code != 0 {
-		t.Fatalf("-fix on commented signature must be a no-op")
-	}
+	_, code = runCLI(t, bin, root, "-fix", "./guard")
+	require.Zero(t, code, "-fix on commented signature must be a no-op")
 
 	after, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(after) != srcCommented {
-		t.Fatalf("file with commented signature must stay byte-identical:\n%s", after)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, srcCommented, string(after), "file with commented signature must stay byte-identical:\n%s", after)
 }
 
 func TestCLI_UnknownFlagFails(t *testing.T) {
@@ -208,12 +171,8 @@ func TestCLI_UnknownFlagFails(t *testing.T) {
 	root := writePkg(t, map[string]string{"clean/clean.go": srcClean})
 
 	out, code := runCLI(t, bin, root, "--totally-bogus-flag")
-	if code == 0 {
-		t.Fatalf("unknown flag must exit non-zero:\n%s", out)
-	}
-	if !strings.Contains(out, "flag provided but not defined") {
-		t.Fatalf("expected flag error, got:\n%s", out)
-	}
+	require.NotZero(t, code, "unknown flag must exit non-zero:\n%s", out)
+	assert.Contains(t, out, "flag provided but not defined", "expected flag error, got:\n%s", out)
 }
 
 func TestCLI_FlagForwarding(t *testing.T) {
@@ -225,12 +184,10 @@ func TestCLI_FlagForwarding(t *testing.T) {
 	root := writePkg(t, map[string]string{"viol/viol.go": srcViolations})
 
 	out20, code20 := runCLI(t, bin, root, "-max-line-len", "20", "./viol")
-	if code20 != 0 || strings.Contains(out20, "Signature") {
-		t.Fatalf("tight limit must disable the collapse diagnostic, got exit %d:\n%s", code20, out20)
-	}
+	require.Zero(t, code20, "tight limit must disable the collapse diagnostic:\n%s", out20)
+	assert.NotContains(t, out20, "Signature", "tight limit must disable the collapse diagnostic:\n%s", out20)
 
 	outDefault, codeDefault := runCLI(t, bin, root, "./viol")
-	if codeDefault == 0 || !strings.Contains(outDefault, "Signature can be formatted more compactly") {
-		t.Fatalf("default limit must report the violation, got exit %d:\n%s", codeDefault, outDefault)
-	}
+	require.NotZero(t, codeDefault, "default limit must report the violation:\n%s", outDefault)
+	assert.Contains(t, outDefault, "Signature can be formatted more compactly", "default limit must report the violation:\n%s", outDefault)
 }
