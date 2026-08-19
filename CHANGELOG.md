@@ -7,60 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-- `.mockery.yml` minimized: every key equal to the mockery v3 default
-  (`dir`, `filename`, `structname`, `pkgname`, formatter options, the
-  `mockery init` boilerplate) removed — only the `packages` selection
-  survives. Regeneration is byte-identical (md5-verified).
-
-## [Unreleased]
-
-### Changed
-- golangci-lint: replaced the empty config (default linters only) with a
-  full suite — staticcheck, govet, errcheck, errorlint, ineffassign,
-  wastedassign, copyloopvar, makezero, gosec, revive, misspell, dupword,
-  whitespace, unconvert, predeclared, asciicheck, decorder, goconst —
-  plus gci/gofumpt formatters. Tuned, not hacked: goconst ignores test
-  corpora (repeated type names in signature fixtures are data), gosec
-  excludes the file-permission/file-walk rules the analyzer needs by
-  design, subprocess rules apply only to tests, `testdata/` excluded.
-  Two real findings fixed: a redundant Go<1.22 loop-var copy, and a
-  `//nolint:dupword` on a legitimate `func() func()` curried-type fixture.
-  Zero issues on the expanded suite.
-
-## [Unreleased]
-
-### Changed
-- Test assertions migrated to testify exclusively: every manual
-  `if got != want { t.Fatal }` comparison (~120 occurrences across 15
-  test files) replaced with `assert`/`require` calls — `require` for
-  failures that void the rest of a test, `assert` for accumulating
-  checks. Interface doubles driven strictly via mockery `EXPECT()`.
-  Benchmark functions keep `b.Fatal` (not test assertions). No test
-  logic changed; analysistest `// want` fixtures untouched.
-
-## [Unreleased]
-
-### Changed
-- Testing stack standardised on testify + mockery: default `.mockery.yml`
-  (testify template, in-package `mocks_test.go`), `make mocks` target,
-  committed generated mock for the `format.Strategy` port. New
-  orchestrator tests for `Formatter.check` (previously covered only via
-  concrete strategies): first-applied-wins ordering, no-strategy empty
-  result, nil-params short-circuit — pinned with the generated mock.
-  CLAUDE.md documents the convention. Note: testify v1.11 exposes
-  `mock.Anything` as a constant (no call parens).
-
-## [Unreleased]
+## [1.3.0] — 2026-08-20
 
 ### Added
-- Homebrew install path: the repository now doubles as a tap
-  (`brew tap vsfedorenko/sigfmt https://github.com/vsfedorenko/sigfmt &&
-  brew install vsfedorenko/sigfmt/sigfmt`). `Formula/sigfmt.rb` installs
-  the prebuilt release binaries (darwin/linux × amd64/arm64) with
-  per-platform checksums; a release-time job regenerates it from the
-  published `checksums.txt`, so future versions update the formula
-  automatically.
+- Homebrew install: the repository doubles as a tap (`brew tap
+  vsfedorenko/sigfmt <repo-url>`), with the formula auto-regenerated
+  from release checksums at publish time.
+- testify + mockery testing infrastructure (default configs): generated
+  mock for the `format.Strategy` port; formatter orchestrator tests
+  (first-applied-wins, no-strategy, nil-params short-circuit).
+
+### Changed
+- All test assertions migrated to testify exclusively: `assert`/`require`
+  (want-first), mocks driven via `EXPECT()` only — no manual `if+Fatal`
+  comparisons remain.
+- golangci-lint: the empty config replaced with a full tuned suite
+  (staticcheck, govet, gosec, revive, goconst, errcheck, errorlint, …
+  plus gci/gofumpt formatters). Real findings fixed; zero issues on the
+  expanded suite.
+- `.mockery.yml` minimized to the `packages` selection — defaults are
+  owned by the tool, not mirrored (regeneration byte-identical).
 
 ## [1.2.1] - 2026-08-19
 
