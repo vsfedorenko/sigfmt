@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- `.mockery.yml` minimized: every key equal to the mockery v3 default
+  (`dir`, `filename`, `structname`, `pkgname`, formatter options, the
+  `mockery init` boilerplate) removed — only the `packages` selection
+  survives. Regeneration is byte-identical (md5-verified).
+
+## [Unreleased]
+
+### Changed
 - golangci-lint: replaced the empty config (default linters only) with a
   full suite — staticcheck, govet, errcheck, errorlint, ineffassign,
   wastedassign, copyloopvar, makezero, gosec, revive, misspell, dupword,
