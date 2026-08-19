@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/vsfedorenko/sigfmt/internal/domain"
+	"github.com/vsfedorenko/sigfmt/internal/pkg/field"
 	"github.com/vsfedorenko/sigfmt/internal/render"
 )
 
@@ -65,27 +66,40 @@ func (e *Extractor) createFuncSignature(fset *token.FileSet, ft *ast.FuncType, s
 	}
 }
 
-// Method extracts info from an interface method.
-func (e *Extractor) Method(fset *token.FileSet, name *ast.Ident, ft *ast.FuncType) *domain.Signature {
-	sig := e.createFieldSignature(fset, name, ft, e.buildMethodSignature(fset, name.Name, ft))
+// Method extracts info from an interface method. Interface methods are
+// always declared with a single name.
+func (e *Extractor) Method(fset *token.FileSet, names []*ast.Ident, ft *ast.FuncType) *domain.Signature {
+	if len(names) == 0 {
+		return nil
+	}
+	name := names[0].Name
+	sig := e.createFieldSignature(fset, names[0].Pos(), ft, name, e.buildMethodSignature(fset, name, ft))
 	if sig != nil {
 		sig.IsInterfaceMethod = true
 	}
 	return sig
 }
 
-// StructField extracts info from a struct field.
-func (e *Extractor) StructField(fset *token.FileSet, name *ast.Ident, ft *ast.FuncType) *domain.Signature {
-	sig := e.createFieldSignature(fset, name, ft, e.buildStructFieldSignature(fset, name.Name, ft))
+// StructField extracts info from a func-typed struct field. A field may be
+// declared with several names (`Handler, Fallback func(...)`); all of them
+// are rendered and rewritten together — dropping any would silently delete
+// a struct field.
+func (e *Extractor) StructField(fset *token.FileSet, names []*ast.Ident, ft *ast.FuncType) *domain.Signature {
+	if len(names) == 0 {
+		return nil
+	}
+	rendered := field.RenderNames(names)
+	sig := e.createFieldSignature(fset, names[0].Pos(), ft, rendered, e.buildStructFieldSignature(fset, rendered, ft))
 	if sig != nil {
 		sig.IsStructField = true
 	}
 	return sig
 }
 
-// createFieldSignature is a helper for creating signatures from named fields (methods/struct fields).
-func (e *Extractor) createFieldSignature(fset *token.FileSet, name *ast.Ident, ft *ast.FuncType, oneLineText string) *domain.Signature {
-	start := name.Pos()
+// createFieldSignature is a helper for creating signatures from named fields
+// (methods/struct fields). name is the rendered field name(s): a single
+// identifier for interface methods, the comma-joined list for struct fields.
+func (e *Extractor) createFieldSignature(fset *token.FileSet, start token.Pos, ft *ast.FuncType, name, oneLineText string) *domain.Signature {
 	end := ft.Params.End()
 	if ft.Results != nil {
 		end = ft.Results.End()
@@ -102,7 +116,7 @@ func (e *Extractor) createFieldSignature(fset *token.FileSet, name *ast.Ident, f
 		OneLineText: oneLineText,
 		FuncType:    ft,
 		Receiver:    nil,
-		Name:        name.Name,
+		Name:        name,
 	}
 }
 

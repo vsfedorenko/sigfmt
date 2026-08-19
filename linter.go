@@ -181,7 +181,7 @@ func (p *PluginLineWrap) handleTypeSpec(pass *analysis.Pass, spec *ast.TypeSpec,
 	}
 }
 
-func (p *PluginLineWrap) handleFields(pass *analysis.Pass, fields *ast.FieldList, extract func(*token.FileSet, *ast.Ident, *ast.FuncType) *domain.Signature, formatter *format.Formatter) {
+func (p *PluginLineWrap) handleFields(pass *analysis.Pass, fields *ast.FieldList, extract extractFunc, formatter *format.Formatter) {
 	if fields == nil {
 		return
 	}
@@ -193,11 +193,16 @@ func (p *PluginLineWrap) handleFields(pass *analysis.Pass, fields *ast.FieldList
 		if !ok || ft.Params == nil {
 			continue
 		}
-		if sig := extract(pass.Fset, field.Names[0], ft); sig != nil {
+		if sig := extract(pass.Fset, field.Names, ft); sig != nil {
 			p.checkAndReport(pass, sig, formatter)
 		}
 	}
 }
+
+// extractFunc extracts a *domain.Signature from an AST field. Interface
+// methods are always single-name; struct fields may declare several names
+// at once, which the extractor renders and rewrites together.
+type extractFunc = func(fset *token.FileSet, names []*ast.Ident, ft *ast.FuncType) *domain.Signature
 
 func (p *PluginLineWrap) checkAndReport(pass *analysis.Pass, sig *domain.Signature, formatter *format.Formatter) {
 	newText := formatter.Check(pass.ReadFile, pass.Fset, sig)
