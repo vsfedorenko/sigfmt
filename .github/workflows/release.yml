@@ -41,8 +41,14 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout code
+      - name: Checkout main
+        # The formula is regenerated from the RELEASE CHECKSUMS, not from the
+        # tag's tree — checkout main so the commit lands on it (checking out
+        # the tag leaves detached HEAD and `git push origin main` fails with
+        # "src refspec main does not match any").
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Regenerate Formula/sigfmt.rb from release checksums
         run: |
