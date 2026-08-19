@@ -92,7 +92,7 @@ type MyInterface interface {
 	iface := typeSpec.Type.(*ast.InterfaceType)
 	method := iface.Methods.List[0]
 
-	sig := e.Method(fset, method.Names[0], method.Type.(*ast.FuncType))
+	sig := e.Method(fset, method.Names, method.Type.(*ast.FuncType))
 
 	assert.NotNil(t, sig)
 	assert.Equal(t, "DoSomething", sig.Name)
@@ -116,11 +116,37 @@ type MyStruct struct {
 	structType := typeSpec.Type.(*ast.StructType)
 	field := structType.Fields.List[0]
 
-	sig := e.StructField(fset, field.Names[0], field.Type.(*ast.FuncType))
+	sig := e.StructField(fset, field.Names, field.Type.(*ast.FuncType))
 
 	assert.NotNil(t, sig)
 	assert.Equal(t, "Handler", sig.Name)
 	assert.True(t, sig.IsStructField)
 	assert.False(t, sig.IsInterfaceMethod)
 	assert.Equal(t, "Handler func(req Request) Response", sig.OneLineText)
+}
+
+func TestStructFieldMultipleNames(t *testing.T) {
+	code := `package test
+
+type MyStruct struct {
+	Handler, Fallback func(req Request) Response
+}
+`
+	fset, file := parseCode(t, code)
+	r := render.New(8)
+	e := New(r)
+
+	genDecl := file.Decls[0].(*ast.GenDecl)
+	typeSpec := genDecl.Specs[0].(*ast.TypeSpec)
+	structType := typeSpec.Type.(*ast.StructType)
+	field := structType.Fields.List[0]
+
+	sig := e.StructField(fset, field.Names, field.Type.(*ast.FuncType))
+
+	assert.NotNil(t, sig)
+	// Every declared name must be rendered — a fix that drops any of them
+	// silently deletes a struct field.
+	assert.Equal(t, "Handler, Fallback", sig.Name)
+	assert.Equal(t, "Handler, Fallback func(req Request) Response", sig.OneLineText)
+	assert.True(t, sig.IsStructField)
 }

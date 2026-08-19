@@ -113,3 +113,17 @@ type CallbackHandler struct {
 
 	ProcessMultiple func(callback func(string) error, fallback func() error) error
 }
+
+// Multi-name func fields: several names share one func type. The fix must
+// keep every name — dropping any silently deletes a struct field.
+type MultiNameHandler struct {
+	OnEvent, OnSignal func(id string) error // want "Signature can be formatted more compactly"
+
+	OnTick func() error
+}
+
+// Multi-name field too long for one line — packing path must preserve names.
+type MultiNamePacked struct {
+	Primary, Secondary func(requestIdentifier string, userIdentifier string, traceIdentifier string,
+		spanIdentifier string, extraIdentifier string, moreIdentifier string) error // want "Signature can be formatted more compactly"
+}
