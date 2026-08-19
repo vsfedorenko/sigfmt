@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-08-19
+
 ### Fixed
 - Multi-name func-typed struct fields (`Handler, Fallback func(...)`) no
   longer lose all names but the first when rewritten: the fix used to
@@ -14,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`A, B func(a string) error` became `A func(...)`); pinned by a
   black-box corpus (collapse, packing, tag, three-name cases) plus an
   analysistest fixture — every declared name must survive the full fix
-  cycle, idempotence included.
+  cycle, idempotence included. (#36)
 
 ### Added
 - Plugin-path e2e suite (`example/gcl_e2e_test.go`): builds the custom
