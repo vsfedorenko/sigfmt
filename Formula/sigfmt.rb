@@ -1,7 +1,7 @@
 class Sigfmt < Formula
   desc "Linter and formatter for Go function signatures"
   homepage "https://github.com/vsfedorenko/sigfmt"
-  version "1.3.0"
+  version "1.4.0"
   license "MIT"
 
   # Prebuilt release archives per platform (no bottles). The analyzer
@@ -11,23 +11,23 @@ class Sigfmt < Formula
 
   on_macos do
     if Hardware::CPU.intel?
-      url "https://github.com/vsfedorenko/sigfmt/releases/download/v1.3.0/sigfmt_1.3.0_darwin_amd64.tar.gz"
-      sha256 "b441ad26788ad14157ee67a48074ff21d3bc401bd0c00d77a8a6326e1996b639"
+      url "https://github.com/vsfedorenko/sigfmt/releases/download/v1.4.0/sigfmt_1.4.0_darwin_amd64.tar.gz"
+      sha256 "f708392261c109c1e53739194b0cdc662e002b245097ebd228c8be3166a4ccbf"
     end
     if Hardware::CPU.arm?
-      url "https://github.com/vsfedorenko/sigfmt/releases/download/v1.3.0/sigfmt_1.3.0_darwin_arm64.tar.gz"
-      sha256 "be95f12ef2f7ef5fee19a2c7417bd0ec8b776c050c61c3c04bd4c39d7da34f07"
+      url "https://github.com/vsfedorenko/sigfmt/releases/download/v1.4.0/sigfmt_1.4.0_darwin_arm64.tar.gz"
+      sha256 "9b2ac0762d854c2a9d98f1d6b0271865306404da9ce08ab5384a971df138f750"
     end
   end
 
   on_linux do
     if Hardware::CPU.intel?
-      url "https://github.com/vsfedorenko/sigfmt/releases/download/v1.3.0/sigfmt_1.3.0_linux_amd64.tar.gz"
-      sha256 "62970e20eace0f5fc70e970b460e6df3b24fcba317a79c89c0eaf1c7a3952db3"
+      url "https://github.com/vsfedorenko/sigfmt/releases/download/v1.4.0/sigfmt_1.4.0_linux_amd64.tar.gz"
+      sha256 "ed251f235023ea0a6dc2897c2652bc7d58fd33c256312cb0efc8d136cdcd99d4"
     end
     if Hardware::CPU.arm?
-      url "https://github.com/vsfedorenko/sigfmt/releases/download/v1.3.0/sigfmt_1.3.0_linux_arm64.tar.gz"
-      sha256 "3e08ed9fd277a4a195cc2ee79ed7228b388b5cfcf6fa774185b418f3c9bfb130"
+      url "https://github.com/vsfedorenko/sigfmt/releases/download/v1.4.0/sigfmt_1.4.0_linux_arm64.tar.gz"
+      sha256 "e02e8ad6600f0960bff2de754fc2ec1d5af0b2aaed148e49f7163a2106068ad6"
     end
   end
 
