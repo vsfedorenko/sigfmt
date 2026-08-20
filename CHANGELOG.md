@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Struct-tag awareness for func-typed struct fields: a field's tag
+  (`json:"…"`, `validate:"…"`, …) is never rewritten, but its width now
+  counts against `max-line-len` — a signature collapses only when
+  signature + tag fit on one line, and the packing path budgets results
+  + tag into the last line (closing `)` moves to the parent indent when
+  needed). Tagged one-liners whose overflow is the tag's doing are left
+  alone instead of being split uselessly. Black-box corpus
+  (`TestStructTagLineBudget`) pins the invariants: no new overflow, tag
+  survival, whitespace-only gofmt disagreement, idempotence.
+
 ### Security
 - CI security suite (`.github/workflows/security.yml`): govulncheck on
   every push/PR plus a daily cron, CodeQL analysis (Go), gitleaks over
