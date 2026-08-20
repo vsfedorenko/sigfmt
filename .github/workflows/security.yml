@@ -73,3 +73,22 @@ jobs:
         # security) — until the owner enables it the job reports but
         # does not block.
         continue-on-error: true
+
+  scorecard:
+    name: OSSF scorecard
+    runs-on: ubuntu-latest
+    # Public-repo scoreboard: branch-protection, CI hygiene, dependency
+    # hygiene. Published to the Security tab; non-blocking.
+    if: github.event_name == 'push' && github.ref_name == 'main'
+    permissions:
+      security-events: write
+      id-token: write
+    steps:
+      - uses: ossf/scorecard-action@v2
+        with:
+          results_format: sarif
+          results_file: scorecard.sarif
+          publish_results: true
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: scorecard.sarif
