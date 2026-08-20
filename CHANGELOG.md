@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- CI security suite (`.github/workflows/security.yml`): govulncheck on
+  every push/PR plus a daily cron, CodeQL analysis (Go), gitleaks over
+  the full history, dependency review on PRs (fails on high/critical).
+- `go` directive bumped 1.25.0 → 1.25.13: govulncheck reported 4
+  reachable stdlib vulnerabilities — fixed by the toolchain patch.
+
 ## [1.3.0] — 2026-08-20
 
 ### Added

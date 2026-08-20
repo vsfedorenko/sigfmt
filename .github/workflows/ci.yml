@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        go: ['1.25']
+        go: ['1.25.13']
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -49,7 +49,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          go-version: '1.25'
+          go-version: '1.25.13'
           cache: true
 
       - name: Run go vet
@@ -80,7 +80,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          go-version: '1.25'
+          go-version: '1.25.13'
           cache: true
 
       - name: Build and Run custom linter on example

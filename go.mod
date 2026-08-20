@@ -1,6 +1,6 @@
 module github.com/vsfedorenko/sigfmt
 
-go 1.25.0
+go 1.25.13
 
 require (
 	github.com/golangci/plugin-module-register v0.1.2
