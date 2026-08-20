@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-08-20
+
 ### Added
 - Struct-tag awareness for func-typed struct fields: a field's tag
   (`json:"…"`, `validate:"…"`, …) is never rewritten, but its width now
