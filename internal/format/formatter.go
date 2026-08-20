@@ -6,6 +6,8 @@ import (
 
 	"github.com/vsfedorenko/sigfmt/internal/config"
 	"github.com/vsfedorenko/sigfmt/internal/domain"
+	"github.com/vsfedorenko/sigfmt/internal/pkg/source"
+	"github.com/vsfedorenko/sigfmt/internal/pkg/text"
 	"github.com/vsfedorenko/sigfmt/internal/render"
 )
 
@@ -16,6 +18,7 @@ const (
 
 // Formatter applies formatting strategies to function signatures.
 type Formatter struct {
+	config     config.Settings
 	strategies []Strategy
 }
 
@@ -24,6 +27,7 @@ func New(cfg config.Settings, renderer *render.Renderer) *Formatter {
 	builder := NewBuilder(cfg, renderer)
 
 	return &Formatter{
+		config: cfg,
 		strategies: []Strategy{
 			NewCollapseStrategy(cfg, renderer),
 			NewParamGroupStrategy(cfg, builder),
@@ -40,6 +44,15 @@ func (f *Formatter) check(fset *token.FileSet, sig *domain.Signature) string {
 		return ""
 	}
 
+	// A tagged struct field already declared on one line that fits the
+	// limit on its own is maximally compact: the overflow (if any) is the
+	// tag's doing, not the signature's. Rewriting would split a compact
+	// one-liner without fixing the line — churn. Tagless signatures keep
+	// the historical behavior (long one-liners get split).
+	if sig.SuffixText != "" && f.isCompactOneLiner(fset, sig) {
+		return ""
+	}
+
 	for _, strategy := range f.strategies {
 		newText, applied := strategy.Apply(fset, sig)
 		if applied {
@@ -48,6 +61,19 @@ func (f *Formatter) check(fset *token.FileSet, sig *domain.Signature) string {
 	}
 
 	return ""
+}
+
+// isCompactOneLiner reports whether the signature is already declared on
+// a single line that fits the limit WITHOUT its suffix (struct tag).
+func (f *Formatter) isCompactOneLiner(fset *token.FileSet, sig *domain.Signature) bool {
+	startLine := fset.Position(sig.Start).Line
+	endLine := fset.Position(sig.End).Line
+	if startLine != endLine {
+		return false
+	}
+	baseIndentLen := text.VisualLength(source.GetIndent(fset, sig.Start), f.config.TabWidth)
+	oneLineLen := text.VisualLength(sig.OneLineText, f.config.TabWidth)
+	return baseIndentLen+oneLineLen <= f.config.MaxLineLen
 }
 
 // originalText returns the signature's source text between sig.Start and

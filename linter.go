@@ -194,6 +194,12 @@ func (p *PluginLineWrap) handleFields(pass *analysis.Pass, fields *ast.FieldList
 			continue
 		}
 		if sig := extract(pass.Fset, field.Names, ft); sig != nil {
+			// A struct tag sits after the signature on its last line. The
+			// rewrite never touches it, but its width must count against
+			// the line budget (the space separator included).
+			if field.Tag != nil {
+				sig.SuffixText = " " + field.Tag.Value
+			}
 			p.checkAndReport(pass, sig, formatter)
 		}
 	}
