@@ -42,8 +42,11 @@ func (s *CollapseStrategy) Apply(fset *token.FileSet, sig *domain.Signature) (st
 	baseIndent := source.GetIndent(fset, sig.Start)
 	baseIndentLen := text.VisualLength(baseIndent, s.config.TabWidth)
 	oneLineVisualLen := text.VisualLength(sig.OneLineText, s.config.TabWidth)
+	// The suffix (struct tag) stays on the collapsed line — its width and
+	// its separating space count against the budget.
+	suffixLen := text.VisualLength(sig.SuffixText, s.config.TabWidth)
 
-	if baseIndentLen+oneLineVisualLen <= s.config.MaxLineLen {
+	if baseIndentLen+oneLineVisualLen+suffixLen <= s.config.MaxLineLen {
 		if startLine != endLine {
 			return sig.OneLineText, true
 		}

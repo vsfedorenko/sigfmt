@@ -63,7 +63,7 @@ func (b *Builder) BuildReformattedSignature(fset *token.FileSet, sig *domain.Sig
 	paramIndent := baseIndent + indentUnit
 	baseIndentLen := text.VisualLength(baseIndent, b.config.TabWidth)
 
-	sb.WriteString(b.renderFieldListGrouped(fset, sig.FuncType.Params, sig, "(", ")", paramIndent, baseIndentLen))
+	sb.WriteString(b.renderFieldListGrouped(fset, sig.FuncType.Params, sig, "(", ")", paramIndent, baseIndent, baseIndentLen))
 
 	if sig.FuncType.Results != nil {
 		sb.WriteString(b.renderer.Results(fset, sig.FuncType.Results))
@@ -72,7 +72,24 @@ func (b *Builder) BuildReformattedSignature(fset *token.FileSet, sig *domain.Sig
 	return sb.String()
 }
 
-func (b *Builder) renderFieldListGrouped(fset *token.FileSet, fl *ast.FieldList, sig *domain.Signature, openBracket, closeBracket, indent string, baseIndentLen int) string {
+// trailerLen returns the visual length of everything that lands on the
+// packing writer's LAST line after the rewritten range: the field suffix
+// (struct tag) and, when a suffix exists, the results that precede it.
+// For tagless signatures it returns 0: their packing budget stays exactly
+// the historical one, keeping every existing golden byte-identical. The
+// closing bracket is NOT included — the writer adds it where needed.
+func (b *Builder) trailerLen(fset *token.FileSet, sig *domain.Signature) int {
+	if sig.SuffixText == "" {
+		return 0
+	}
+	n := text.VisualLength(sig.SuffixText, b.config.TabWidth)
+	if sig.FuncType.Results != nil {
+		n += text.VisualLength(b.renderer.Results(fset, sig.FuncType.Results), b.config.TabWidth)
+	}
+	return n
+}
+
+func (b *Builder) renderFieldListGrouped(fset *token.FileSet, fl *ast.FieldList, sig *domain.Signature, openBracket, closeBracket, indent, parentIndent string, baseIndentLen int) string {
 	if fl == nil || len(fl.List) == 0 {
 		return openBracket + closeBracket
 	}
@@ -83,7 +100,7 @@ func (b *Builder) renderFieldListGrouped(fset *token.FileSet, fl *ast.FieldList,
 	}
 	prefixLen += text.VisualLength(openBracket, b.config.TabWidth)
 
-	writer := b.newBuilderLineWriter(indent, openBracket, prefixLen)
+	writer := b.newBuilderLineWriter(indent, parentIndent, openBracket, prefixLen, b.trailerLen(fset, sig))
 
 	i := 0
 	for i < len(fl.List) {
@@ -170,16 +187,27 @@ type builderLineWriter struct {
 	currentVisLen int
 	indent        string
 	indentVisLen  int
-	openBracket   string
+	// parentIndent is one level shallower than indent: where the closing
+	// bracket lands when the params must be split (the hand-written shape
+	// `func(\n		param,\n	)`).
+	parentIndent string
+	openBracket  string
+	// trailerVisLen is the visual length reserved for what follows the
+	// closing bracket on the last line (results, struct tag). Every line
+	// the writer may close must leave room for it, or the finished line
+	// overflows the limit once the trailer is appended.
+	trailerVisLen int
 }
 
-func (b *Builder) newBuilderLineWriter(indent, openBracket string, initialVisLen int) *builderLineWriter {
+func (b *Builder) newBuilderLineWriter(indent, parentIndent, openBracket string, initialVisLen, trailerVisLen int) *builderLineWriter {
 	l := &builderLineWriter{
 		b:             b,
 		indent:        indent,
 		indentVisLen:  text.VisualLength(indent, b.config.TabWidth),
+		parentIndent:  parentIndent,
 		openBracket:   openBracket,
 		currentVisLen: initialVisLen,
+		trailerVisLen: trailerVisLen,
 	}
 	l.currentLine.WriteString(openBracket)
 	return l
@@ -193,6 +221,15 @@ func (lb *builderLineWriter) add(s string) {
 	potentialLen := lb.currentVisLen + textVisLen
 	if needsComma {
 		potentialLen += 2
+	}
+
+	// Any line the writer closes can turn out to be the last one: for
+	// tagged fields reserve room for the trailer (results + struct tag)
+	// and the closing bracket, or the finished line overflows the limit.
+	// Tagless signatures reserve nothing — byte-identical historical
+	// packing.
+	if lb.trailerVisLen > 0 {
+		potentialLen += lb.trailerVisLen + 1
 	}
 
 	shouldWrap := potentialLen > lb.b.config.MaxLineLen && currentText != lb.indent
@@ -226,12 +263,31 @@ func (lb *builderLineWriter) forceBreak() {
 }
 
 func (lb *builderLineWriter) canFitOnCurrentLine(additionalLength int) bool {
-	// Account for comma and space before the next parameter
+	// Account for comma and space before the next parameter. For tagged
+	// fields also the closing bracket and the trailer (results + struct
+	// tag) that follow it; tagless signatures keep the historical budget.
 	potentialLen := lb.currentVisLen + 2 + additionalLength
+	if lb.trailerVisLen > 0 {
+		potentialLen += lb.trailerVisLen + 1
+	}
 	return potentialLen <= lb.b.config.MaxLineLen
 }
 
 func (lb *builderLineWriter) String(closeBracket string) string {
+	if lb.trailerVisLen > 0 && len(lb.lines) > 0 {
+		closeVisLen := text.VisualLength(closeBracket, lb.b.config.TabWidth)
+		if lb.currentVisLen+closeVisLen+lb.trailerVisLen > lb.b.config.MaxLineLen {
+			// Closing on the current line would overflow once the trailer
+			// (results + struct tag) is appended. Break the list instead:
+			// trailing comma after the last param, closing bracket on the
+			// parent-indent line — the hand-written split shape.
+			lb.currentLine.WriteString(",")
+			lb.lines = append(lb.lines, lb.currentLine.String())
+			lb.currentLine.Reset()
+			lb.currentLine.WriteString(lb.parentIndent)
+			lb.currentVisLen = text.VisualLength(lb.parentIndent, lb.b.config.TabWidth)
+		}
+	}
 	lb.currentLine.WriteString(closeBracket)
 	lb.lines = append(lb.lines, lb.currentLine.String())
 	return strings.Join(lb.lines, "\n")

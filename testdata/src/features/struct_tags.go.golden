@@ -1,0 +1,38 @@
+package features
+
+// Struct fields with tags: the tag is never part of the rewrite, but its
+// width counts against the line budget — a collapsed or packed line keeps
+// the whole construct (signature + tag) within max-line-len.
+
+// Short signature + tag: collapses, tag keeps the line within 120.
+type TaggedHandler struct {
+	Process func(id string) error `json:"process"` // want "Signature can be formatted more compactly"
+}
+
+// TaggedMultiName: several names share one func type and one tag.
+type TaggedMultiName struct {
+	OnEvent, OnSignal func(id string) error `json:"on_event"` // want "Signature can be formatted more compactly"
+}
+
+// Long signature + long tag: collapsing would exceed max-line-len once
+// the tag lands on the collapsed line — the signature stays split, but
+// packing still compacts the params (results + tag budgeted into the
+// last line's width).
+type TaggedLongSignature struct {
+	ProcessOrderEntryWithLongName func(
+		firstParameterName string,
+		secondParameterName int64,
+		thirdParameterName int,
+		fourthParameterName string) (result string, err error) `json:"process_order_entry" validate:"required"` // want "Signature can be formatted more compactly"
+}
+
+// TaggedAlreadyCompact: already one line and within budget — untouched.
+type TaggedAlreadyCompact struct {
+	Simple func(id string) error `json:"simple"`
+}
+
+// TaggedTooLongOneLine: one line whose tag pushes it beyond the limit —
+// nothing sigfmt can do (the tag is not its business), left as is.
+type TaggedTooLongOneLine struct {
+	Handler func(w int, r string) error `json:"handler" validate:"required,min=1,max=64,oneof=start stop restart" yaml:"handler_key_for_serialization"`
+}

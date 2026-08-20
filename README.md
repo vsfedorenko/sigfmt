@@ -692,6 +692,24 @@ func Map[T any, R any](items []T, fn func(T) R) []R  // 54 chars (fits in 120)
   }
 ```
 
+**Struct Tags Are Budgeted, Never Rewritten:**
+```diff
+  type Registry struct {
+-     Handler func(
+-         w int,
+-         r string,
+-     ) error `json:"handler"`
++     Handler func(w int, r string) error `json:"handler"`
+  }
+```
+
+The tag stays on the collapsed line, so its width counts against
+`max-line-len`: a signature collapses only when signature + tag fit. When
+the tag is too long for any single line, the field keeps the hand-written
+split shape (params one per line, `)` at the parent indent) and the tag is
+left exactly where it was — sigfmt never edits tags and never fights
+gofmt's tag alignment.
+
 ### 5. Generics (Go 1.18+)
 
 **Basic Generics:**
