@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] — 2026-08-21
+
 ### Fixed
 - `make test-update-golden` corrupted goldens for files analyzed in more
   than one pass (a package and its external test variant): identical
@@ -20,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   signature alone exceeds max-line-len (unlike a small signature
   outweighed by its tag) must be unpacked with the tag budgeted into the
   closing-paren line.
+
+### Changed
+- OSSF scorecard on main pushes (supply-chain hygiene metrics in the
+  Security tab); scorecard-action pinned after the upstream moving `v2`
+  tag was unpublished.
 
 ## [1.4.0] — 2026-08-20
 
