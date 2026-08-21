@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Renderer fast path for plain type expressions (identifiers, qualified
+  names, pointers, slices, maps, channels, ellipses): rendered by string
+  construction instead of go/printer. Profiling attributed ~68% of
+  analyzer allocations to printer.Fprint's tabwriter machinery for types
+  that print identically either way. Benchmarks: violations corpus
+  8.25ms → 4.0ms/op and 53.9k → 20.7k allocs/op (-62%); clean corpus
+  -68% allocs. Against the gofmt baseline the analyzer drops from 2.2×
+  slower to ~1.2×. Golden files byte-identical; full suite green.
+
 ## [1.4.1] — 2026-08-21
 
 ### Fixed
