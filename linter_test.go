@@ -8,6 +8,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/analysistest"
@@ -251,4 +252,12 @@ func applyEdit(src []byte, edit fileEdit) []byte {
 	buf.Write(edit.newText)
 	buf.Write(src[edit.end:])
 	return buf.Bytes()
+}
+
+// GetLoadMode advertises the syntax-only load mode — pluginmodule requires
+// it and a change here alters the analysis cost contract.
+func TestGetLoadMode(t *testing.T) {
+	p, err := New(nil)
+	require.NoError(t, err, "New(nil) must build with defaults")
+	assert.Equal(t, "syntax", p.GetLoadMode(), "must stay syntax-only: the linter promises no type loading")
 }
