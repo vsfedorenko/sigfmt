@@ -3,6 +3,7 @@ package sigfmt
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"os"
 	"sort"
 	"testing"
@@ -179,6 +180,13 @@ func collectEditsFromResults(results []*analysistest.Result) map[string][]fileEd
 		}
 	}
 
+	// The same file may be analyzed more than once (a package and its
+	// external test variant both surface the non-test sources), which
+	// yields identical diagnostics and fixes. Deduplicate by
+	// (path, pos, end, newText): applying the same edit twice corrupts
+	// the golden — the second application runs on rewritten bytes with
+	// stale offsets (observed: ") error { // want" became ") error/ want").
+	seen := make(map[string]struct{})
 	for _, res := range results {
 		for _, diag := range res.Diagnostics {
 			for _, fix := range diag.SuggestedFixes {
@@ -186,11 +194,17 @@ func collectEditsFromResults(results []*analysistest.Result) map[string][]fileEd
 					file := res.Pass.Fset.File(edit.Pos)
 					path := file.Name()
 
-					fileEdits[path] = append(fileEdits[path], fileEdit{
+					fe := fileEdit{
 						pos:     file.Offset(edit.Pos),
 						end:     file.Offset(edit.End),
 						newText: edit.NewText,
-					})
+					}
+					key := fmt.Sprintf("%s:%d:%d:%s", path, fe.pos, fe.end, fe.newText)
+					if _, dup := seen[key]; dup {
+						continue
+					}
+					seen[key] = struct{}{}
+					fileEdits[path] = append(fileEdits[path], fe)
 				}
 			}
 		}

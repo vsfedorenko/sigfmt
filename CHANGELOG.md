@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `make test-update-golden` corrupted goldens for files analyzed in more
+  than one pass (a package and its external test variant): identical
+  suggested-fix edits were applied twice — the second application ran on
+  rewritten bytes with stale offsets (`") error { // want"` became
+  `") error/ want"`). Edits are now deduplicated by
+  (path, pos, end, newText).
+
+### Added
+- Struct-tag budget edge case pinned: a one-line func field whose
+  signature alone exceeds max-line-len (unlike a small signature
+  outweighed by its tag) must be unpacked with the tag budgeted into the
+  closing-paren line.
+
 ## [1.4.0] — 2026-08-20
 
 ### Added

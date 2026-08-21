@@ -36,3 +36,20 @@ type TaggedAlreadyCompact struct {
 type TaggedTooLongOneLine struct {
 	Handler func(w int, r string) error `json:"handler" validate:"required,min=1,max=64,oneof=start stop restart" yaml:"handler_key_for_serialization"`
 }
+
+// TaggedHugeSignatureOneLine: the signature alone (8 params) exceeds
+// max-line-len even without the tag, so unlike TaggedTooLongOneLine this
+// one-liner MUST be unpacked — the tag additionally forces the closing
+// paren line to budget results+tag width.
+type TaggedHugeSignatureOneLine struct {
+	Handler func(
+		ctx interface{},
+		request interface{},
+		response interface{},
+		options map[string]interface{},
+		extra []byte,
+		verbose bool,
+		timeout int,
+		retries int,
+	) (result string, err error) `json:"handler" yaml:"handler" validate:"required,min=1,max=99" xml:"handler"` // want "Signature can be formatted more compactly"
+}
