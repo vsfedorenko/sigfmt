@@ -151,3 +151,33 @@ type MyStruct struct {
 	assert.Equal(t, "Handler, Fallback func(req Request) Response", sig.OneLineText)
 	assert.True(t, sig.IsStructField)
 }
+
+// Edge inputs: no names, invalid positions — the extractors must return nil
+// instead of building a broken signature.
+func TestMethodAndStructFieldEdgeInputs(t *testing.T) {
+	fset := token.NewFileSet()
+	e := New(render.New(8))
+
+	ft := &ast.FuncType{Params: &ast.FieldList{Opening: token.Pos(10), Closing: token.Pos(20)}}
+
+	t.Run("method without names", func(t *testing.T) {
+		assert.Nil(t, e.Method(fset, nil, ft), "no names -> nil")
+	})
+
+	t.Run("struct field without names", func(t *testing.T) {
+		assert.Nil(t, e.StructField(fset, nil, ft), "no names -> nil")
+	})
+
+	t.Run("method with invalid start", func(t *testing.T) {
+		names := []*ast.Ident{{Name: "M", NamePos: token.NoPos}}
+		assert.Nil(t, e.Method(fset, names, ft), "invalid pos -> nil")
+	})
+
+	t.Run("func type without results closing", func(t *testing.T) {
+		ftNoRes := &ast.FuncType{Params: &ast.FieldList{Opening: token.Pos(5), Closing: token.Pos(7)}}
+		names := []*ast.Ident{{Name: "M", NamePos: token.Pos(1)}}
+		sig := e.Method(fset, names, ftNoRes)
+		require.NotNil(t, sig)
+		assert.Equal(t, token.Pos(7), sig.DiagPos, "diagPos falls back to params closing")
+	})
+}

@@ -26,6 +26,19 @@ func TestNode(t *testing.T) {
 		{"InterfaceType", &ast.InterfaceType{Methods: &ast.FieldList{}}, "interface { }"},
 		{"EmptyFieldList", &ast.FieldList{}, "()"},
 		{"NilNode", nil, ""},
+
+		// fast-path branches of plainTypeString (62.9% -> full)
+		{"ChanRecv", &ast.ChanType{Dir: ast.RECV, Value: &ast.Ident{Name: "int"}}, "<-chan int"},
+		{"ChanSend", &ast.ChanType{Dir: ast.SEND, Value: &ast.Ident{Name: "int"}}, "chan<- int"},
+		{"ChanBoth", &ast.ChanType{Dir: ast.RECV | ast.SEND, Value: &ast.Ident{Name: "int"}}, "chan int"},
+		{"Ellipsis", &ast.Ellipsis{Elt: &ast.Ident{Name: "int"}}, "...int"},
+		{"ChanOfPtr", &ast.ChanType{Dir: ast.RECV, Value: &ast.StarExpr{X: &ast.Ident{Name: "T"}}}, "<-chan *T"},
+		{"MapOfSlices", &ast.MapType{Key: &ast.Ident{Name: "string"}, Value: &ast.ArrayType{Elt: &ast.Ident{Name: "byte"}}}, "map[string][]byte"},
+		{"SizedArrayFallsBackToPrinter", &ast.ArrayType{Len: &ast.Ident{Name: "N"}, Elt: &ast.Ident{Name: "byte"}}, "[N]byte"},
+		{"ChanOfSizedArray", &ast.ChanType{Dir: ast.RECV, Value: &ast.ArrayType{Len: &ast.Ident{Name: "N"}, Elt: &ast.Ident{Name: "byte"}}}, "<-chan [N]byte"},
+		{"EllipsisOfSizedArray", &ast.Ellipsis{Elt: &ast.ArrayType{Len: &ast.Ident{Name: "N"}, Elt: &ast.Ident{Name: "byte"}}}, "...[N]byte"},
+		{"MapOfChan", &ast.MapType{Key: &ast.ChanType{Dir: ast.SEND, Value: &ast.Ident{Name: "int"}}, Value: &ast.Ident{Name: "bool"}}, "map[chan<- int]bool"},
+		{"StructFallsBackToPrinter", &ast.StructType{Fields: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: "int"}}}}}, "struct { int }"},
 	}
 
 	for _, tt := range tests {
