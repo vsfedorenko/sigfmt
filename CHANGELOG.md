@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- golangci-lint compatibility matrix extended to v2.13.1 (both integration
+  paths live-verified: proxy build against the published v1.5.0 tag and the
+  local `path:` build — diagnostics, `--fix`, idempotent re-run). CI's
+  plugin-path e2e now builds with v2.13.1 on Go 1.26 (v2.13 requires
+  Go ≥ 1.26 to build the custom binary); CGO disabled to dodge the
+  binutils gold-linker drop.
+
 ### Added
 - Native Go fuzzing harness (`FuzzFixInvariants`): hostile-signature
   mutation over the public analyzer with the same three invariants the
