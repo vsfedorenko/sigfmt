@@ -41,7 +41,12 @@ test-clean: ## Run tests without cache
 .PHONY: bench
 bench: ## Run benchmark suite (analyzer vs gofmt baseline)
 	@echo "Running benchmarks..."
-	go test -bench . -benchmem -run '^$' ./...
+	@go test -bench . -benchmem -run '^$' ./...
+
+.PHONY: fuzz
+fuzz: ## Fuzz the analyzer for 60s (hostile-signature mutations)
+	@echo "Fuzzing analyzer..."
+	@go test -fuzz=FuzzFixInvariants -fuzztime=60s .
 
 .PHONY: fmt
 fmt: ## Format code

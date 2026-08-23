@@ -1036,12 +1036,36 @@ The project uses `Makefile` for common development tasks:
 *   `make test-race`: Run tests with the race detector.
 *   `make test-coverage`: Generate a test coverage report.
 *   `make test-update-golden`: Update golden files (use when diagnostic messages or expected fixes change).
+*   `make fuzz`: Fuzz the analyzer for 60s over hostile signatures (see below).
 *   `make fmt`: Format Go code.
 *   `make lint`: Run linters.
 *   `make check`: Run all checks (test, fmt, lint).
 *   `make build-example`: Build the example custom `golangci-lint` binary.
 *   `make run-example`: Run the linter on the example project.
 *   `make clean`: Clean up build artifacts.
+
+### Fuzzing
+
+The analyzer ships a native Go fuzzing harness, `FuzzFixInvariants`
+(`fuzz_test.go`). It mutates hostile signatures and asserts the three
+invariants the glitch corpus pins, on every input that parses:
+
+1. the applied fix output still parses,
+2. gofmt-clean input stays gofmt-clean (a signature formatter must never
+   break formatting — making unformatted files formatted is gofmt's job),
+3. a second pass proposes nothing (idempotence).
+
+```bash
+make fuzz                                # 60-second campaign
+go test -fuzz=FuzzFixInvariants -fuzztime=10m   # longer campaign
+go test -run=FuzzFixInvariants           # replay seeds + committed crashers
+```
+
+Inputs that make an invariant fail are written to
+`testdata/fuzz/FuzzFixInvariants/` and must be committed together with the
+fix — they become permanent regression cases. The seed corpus is derived
+from the glitch corpus (extreme parameter counts, nested generics,
+pointer-of-pointer types, variadic func chains).
 
 ### Updating Diagnostic Messages
 

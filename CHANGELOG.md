@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Native Go fuzzing harness (`FuzzFixInvariants`): hostile-signature
+  mutation over the public analyzer with the same three invariants the
+  glitch corpus pins — the applied output parses, stays a gofmt fixed
+  point whenever the input was one, and a second pass is a no-op.
+  Seeded from the glitch corpus; `go test -fuzz=FuzzFixInvariants
+  -fuzztime=60s` grows it further. A 2-minute campaign (1.9M execs)
+  found no linter defects; it did surface and pin the correct
+  gofmt-preservation semantics (a signature formatter must never break
+  formatting, not fix pre-existing unformatted files).
+
 ## [1.5.0] — 2026-08-23
 
 ### Added

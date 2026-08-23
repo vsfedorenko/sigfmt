@@ -1,0 +1,2 @@
+go test fuzz v1
+string("package g\n\ntype Service interface {\n\tDo(\n\t\tctx int,\n\t\tid string,\n\t) error\n}\n")
