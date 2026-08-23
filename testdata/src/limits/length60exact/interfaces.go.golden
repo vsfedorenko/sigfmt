@@ -6,7 +6,7 @@ package length60exact
 // (8 + 53 - 1 = 60, inclusive); DoOver raw = 54 splits — aggressive
 // packing never leaves an over-limit one-liner in place.
 type IFit interface {
-	DoFit(xxxxxxxxxxxxxxxxxxxxxxxxxxx int, second string) // raw = 53 -> fits
+	DoFit(xxxxxxxxxxxxxxxxxxxxxxxxxxx int, second string)  // raw = 53 -> fits
 	DoOver(xxxxxxxxxxxxxxxxxxxxxxxxxxx int,
 		second string) // want "Signature can be formatted more compactly"
 }
