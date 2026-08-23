@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-08-23
+
 ### Added
 - Standalone `sigfmt -diff ./...` dry-run mode: a lone `-diff` is promoted
   to `-fix -diff` by the CLI entry point, so it previews all proposed
