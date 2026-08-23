@@ -41,7 +41,7 @@ func TestCheckWithSource_NoOpGuard(t *testing.T) {
 	cfg := config.New(nil)
 	f := New(cfg, render.New(cfg.TabWidth))
 
-	got := f.Check(readFileOf(source), fset, sig)
+	got := f.Check(testLoader(fset, source), sig)
 	assert.Empty(t, got, "no-op guard failed: got fix\n%s", got)
 }
 
@@ -52,7 +52,7 @@ func TestCheckWithSource_CollapseStillReported(t *testing.T) {
 	cfg := config.New(nil)
 	f := New(cfg, render.New(cfg.TabWidth))
 
-	got := f.Check(readFileOf(source), fset, sig)
+	got := f.Check(testLoader(fset, source), sig)
 	require.NotEmpty(t, got, "expected collapse fix, got none")
 	assert.Equal(t, "func F(a int, b string) error", got, "unexpected fix")
 }
@@ -65,8 +65,7 @@ func TestCheckWithSource_UnreadableSourceKeepsDiagnostic(t *testing.T) {
 	cfg := config.New(nil)
 	f := New(cfg, render.New(cfg.TabWidth))
 
-	failing := func(string) ([]byte, error) { return nil, errUnavailable }
-	got := f.Check(failing, fset, sig)
+	got := f.Check(testLoaderFailing(fset), sig)
 	assert.NotEmpty(t, got, "unreadable source must keep the diagnostic")
 }
 

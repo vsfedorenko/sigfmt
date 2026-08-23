@@ -75,7 +75,7 @@ func TestCheckTagged_CompactOneLinerUntouched(t *testing.T) {
 	cfg := config.New(nil)
 	f := New(cfg, render.New(cfg.TabWidth))
 
-	got := f.Check(readFileOf(source), fset, sig)
+	got := f.Check(testLoader(fset, source), sig)
 	assert.Empty(t, got, "compact tagged one-liner must stay untouched, got fix:\n%s", got)
 }
 
@@ -87,7 +87,7 @@ func TestCheckTagged_MultiLineStillReported(t *testing.T) {
 	cfg := config.New(nil)
 	f := New(cfg, render.New(cfg.TabWidth))
 
-	got := f.Check(readFileOf(source), fset, sig)
+	got := f.Check(testLoader(fset, source), sig)
 	assert.NotEmpty(t, got, "tagged multi-line field must produce a fix")
 }
 
@@ -99,7 +99,7 @@ func TestCheckTagged_HugeOneLinerStillReported(t *testing.T) {
 	cfg := config.New(nil)
 	f := New(cfg, render.New(cfg.TabWidth))
 
-	got := f.Check(readFileOf(source), fset, sig)
+	got := f.Check(testLoader(fset, source), sig)
 	assert.NotEmpty(t, got, "huge tagged one-liner must produce a fix")
 }
 

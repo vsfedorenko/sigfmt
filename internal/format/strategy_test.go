@@ -26,6 +26,7 @@ func TestCollapseStrategy(t *testing.T) {
 	r := render.New(cfg.TabWidth)
 	strategy := NewCollapseStrategy(cfg, r)
 	fset, file := newTestFileSet()
+	fileSrc := newSyntheticFile(fset)
 
 	tests := []struct {
 		name        string
@@ -70,7 +71,7 @@ func TestCollapseStrategy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			newText, applied := strategy.Apply(fset, tt.sig)
+			newText, applied := strategy.Apply(fileSrc, tt.sig)
 			assert.Equal(t, tt.wantApplied, applied)
 			assert.Equal(t, tt.wantNewText, newText != "")
 		})
@@ -79,6 +80,7 @@ func TestCollapseStrategy(t *testing.T) {
 
 func TestParamGroupStrategy(t *testing.T) {
 	fset, _ := newTestFileSet()
+	fileSrc := newSyntheticFile(fset)
 	r := render.New(4)
 
 	tests := []struct {
@@ -104,7 +106,7 @@ func TestParamGroupStrategy(t *testing.T) {
 			builder := NewBuilder(tt.cfg, r)
 			strategy := NewParamGroupStrategy(tt.cfg, builder)
 
-			_, applied := strategy.Apply(fset, sig)
+			_, applied := strategy.Apply(fileSrc, sig)
 			assert.Equal(t, tt.wantApplied, applied)
 		})
 	}
@@ -112,6 +114,7 @@ func TestParamGroupStrategy(t *testing.T) {
 
 func TestDefinitionPackingStrategy(t *testing.T) {
 	fset, _ := newTestFileSet()
+	fileSrc := newSyntheticFile(fset)
 	r := render.New(4)
 
 	tests := []struct {
@@ -155,7 +158,7 @@ func TestDefinitionPackingStrategy(t *testing.T) {
 			}
 			builder := NewBuilder(tt.cfg, r)
 			strategy := NewDefinitionPackingStrategy(tt.cfg, builder)
-			_, applied := strategy.Apply(fset, sig)
+			_, applied := strategy.Apply(fileSrc, sig)
 			assert.Equal(t, tt.wantApplied, applied)
 		})
 	}
@@ -163,6 +166,7 @@ func TestDefinitionPackingStrategy(t *testing.T) {
 
 func TestConsistencyStrategy(t *testing.T) {
 	fset, file := newTestFileSet()
+	fileSrc := newSyntheticFile(fset)
 	r := render.New(4)
 	builder := NewBuilder(config.Settings{}, r)
 	strategy := NewConsistencyStrategy(builder)
@@ -209,7 +213,7 @@ func TestConsistencyStrategy(t *testing.T) {
 			sig := &domain.Signature{
 				FuncType: &ast.FuncType{Params: &ast.FieldList{List: tt.params}},
 			}
-			_, applied := strategy.Apply(fset, sig)
+			_, applied := strategy.Apply(fileSrc, sig)
 			assert.Equal(t, tt.wantApplied, applied)
 		})
 	}
