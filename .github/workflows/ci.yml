@@ -80,7 +80,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          go-version: '1.25.13'
+          go-version: '1.26.0'
           cache: true
 
       - name: Build and Run custom linter on example
@@ -93,6 +93,8 @@ jobs:
 
       - name: Plugin-path e2e (custom binary, third-party module)
         working-directory: example
+        env:
+          CGO_ENABLED: '0'
         run: |
-          go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2 custom
+          go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.1 custom
           go test -run TestPluginPath -v .

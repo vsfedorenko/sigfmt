@@ -106,7 +106,14 @@ end-to-end (plugin loads, diagnostics produced, `--fix` applies, settings decode
 | golangci-lint | plugin API | From proxy | Local path | Notes |
 |---|---|---|---|---|
 | v2.7.1  | `plugin-module-register` | ✅ | ✅ | Oldest v2 tested |
-| v2.12.2 | `plugin-module-register` | ✅ | ✅ | Newest v2 tested |
+| v2.12.2 | `plugin-module-register` | ✅ | ✅ | Go ≥ 1.24 |
+| v2.13.1 | `plugin-module-register` | ✅ | ✅ | Newest v2 tested; requires Go ≥ 1.26 to **build** the custom binary |
+
+The From-proxy column was verified against the **published** `v1.5.0` tag
+(`go run …/golangci-lint@v2.13.1 custom` with `version: v1.5.0` in
+`.custom-gcl.yml`), the local-path column against a `path:` checkout —
+both produce a working custom binary: diagnostics fire, `--fix` applies,
+a re-run is clean.
 
 v1 (`golangci-lint` ≤ 1.x) is **not** supported: the v1 plugin API predates
 `plugin-module-register`. If `golangci-lint custom` reports an unknown command,
