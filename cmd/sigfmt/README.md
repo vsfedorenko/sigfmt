@@ -32,9 +32,10 @@ sigfmt main.go
 | `--pack-struct-fields` | `true` | Aggressively pack function-type struct fields (multiple params per line). |
 | `--pack-interface-methods` | `true` | Aggressively pack method signatures in interfaces (multiple params per line). |
 | `--fix` | `false` | Apply all suggested fixes automatically and write the results back to the source files. |
+| `--diff` | `false` | Preview fixes as a unified diff without writing anything. Works standalone (`sigfmt --diff ./...`, like `gofmt -d`) — a lone `--diff` is promoted to `--fix --diff` automatically. |
 
-> Booleans are specified as `--pack-struct-fields=false`. The `--fix` flag is
-> provided by the underlying analysis driver.
+> Booleans are specified as `--pack-struct-fields=false`. The `--fix` and
+> `--diff` flags are provided by the underlying analysis driver.
 
 ## Usage Examples
 
@@ -59,6 +60,16 @@ sigfmt --fix ./...
 ```
 
 This rewrites the affected files in place with the suggested formatting.
+
+### Preview fixes (dry run)
+
+```bash
+sigfmt --diff ./...
+```
+
+Prints the same changes `--fix` would make as a unified diff, without
+touching any file, and exits 0 (like `gofmt -d`). Useful in CI or before a
+bulk `--fix` run.
 
 ### Custom line length
 

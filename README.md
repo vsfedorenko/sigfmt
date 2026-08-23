@@ -229,6 +229,9 @@ sigfmt ./...
 # Automatically fix issues in-place
 sigfmt -fix ./...
 
+# Preview the changes a -fix would make, without writing anything
+sigfmt -diff ./...
+
 # With custom settings
 sigfmt -max-line-len 100 -tab-width 4 ./...
 
@@ -260,7 +263,7 @@ Available CLI flags:
 | `-pack-interface-methods` | `true` | Aggressively pack method signatures in interfaces |
 | `-param-groups` | _(none)_ | Semicolon-separated parameter type groups (e.g. `"context.Context,error;io.Reader,io.Writer"`) |
 | `-fix` | `false` | Apply suggested fixes automatically (provided by `singlechecker`) |
-| `-diff` | `false` | Preview fixes as a unified diff without applying them (combine with `-fix`; provided by `singlechecker`) |
+| `-diff` | `false` | Preview fixes as a unified diff without applying them. Works standalone (`sigfmt -diff ./...`, like `gofmt -d`) or combined with `-fix`; a lone `-diff` is promoted to `-fix -diff` by the sigfmt entry point |
 | `-V` | _(version)_ | Print analyzer version and exit |
 
 #### Editor integration
