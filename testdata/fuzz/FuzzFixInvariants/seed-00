@@ -1,0 +1,2 @@
+go test fuzz v1
+string("package g\n\nfunc Many(a1, a2 int, b1, b2 string, c1, c2 bool, d float64, e rune, f byte,\n\tg1, g2, g3, g4, g5, g6, g7, g8 int, h [16]byte, i chan int, j map[string]int,\n\tk func(), l interface{}, m any, n error, o ...int) {\n\t_ = a1\n}\n")

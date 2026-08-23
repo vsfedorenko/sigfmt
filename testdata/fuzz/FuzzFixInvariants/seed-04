@@ -1,0 +1,2 @@
+go test fuzz v1
+string("package g\n\nfunc Curried(\n\tx int,\n) func() func() error {\n\treturn nil\n}\n")

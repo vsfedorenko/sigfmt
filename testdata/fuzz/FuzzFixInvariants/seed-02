@@ -1,0 +1,2 @@
+go test fuzz v1
+string("package g\n\ntype Container[T any] struct{ val T }\n\nfunc (c *Container[T]) Get(\n\tother *Container[T],\n\tdeep ***T,\n) T {\n\treturn c.val\n}\n")

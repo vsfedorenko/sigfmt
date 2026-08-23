@@ -1,0 +1,2 @@
+go test fuzz v1
+string("package g\n\nfunc OneHuge(\n\tparam map[string]map[int][]func(string) (map[string]error, error),\n) error {\n\treturn nil\n}\n")

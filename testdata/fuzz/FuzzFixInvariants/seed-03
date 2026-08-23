@@ -1,0 +1,2 @@
+go test fuzz v1
+string("package g\n\nfunc OnlyVariadic(\n\trest ...map[string][]func(int) error,\n) {\n}\n")

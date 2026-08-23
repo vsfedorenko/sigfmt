@@ -1,0 +1,2 @@
+go test fuzz v1
+string("package g\n\nfunc Nested[T any, U ~int | ~string, V comparable](\n\tt T,\n\tu U,\n\tv V,\n) (r1 T, r2 U, r3 V) {\n\treturn t, u, v\n}\n")
