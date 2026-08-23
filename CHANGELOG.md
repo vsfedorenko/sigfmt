@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Package documentation (`doc.go`) with the settings reference, and
+  runnable godoc examples: plugin configuration via `New`, the standalone
+  analyzer's CLI flags via `NewAnalyzer`, and a full analysis pass with
+  suggested fixes applied (`example_test.go`). Examples are
+  exercise-verified: each `// Output:` block is asserted against a real
+  analyzer run.
+
 ## [1.5.1] — 2026-08-23
 
 ### Changed
