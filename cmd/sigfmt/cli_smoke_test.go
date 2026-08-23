@@ -126,6 +126,36 @@ func TestCLI_DiffDoesNotModifyFiles(t *testing.T) {
 	assert.Contains(t, out, "func Long(a int, b string) error {", "-diff must print the proposed fix:\n%s", out)
 }
 
+func TestCLI_LoneDiffIsPreviewMode(t *testing.T) {
+	// Upstream singlechecker ignores -diff without -fix (it silently
+	// degrades to a plain check run). The sigfmt entry point promotes a
+	// lone -diff to -fix -diff, so `sigfmt -diff ./...` previews the
+	// changes like `gofmt -d` does — without touching any file.
+	bin := buildCLI(t)
+	root := writePkg(t, map[string]string{"viol/viol.go": srcViolations})
+	path := filepath.Join(root, "viol", "viol.go")
+
+	out, code := runCLI(t, bin, root, "-diff", "./viol")
+	require.Zero(t, code, "lone -diff must exit 0 (preview mode):\n%s", out)
+	assert.Contains(t, out, "func Long(a int, b string) error {", "lone -diff must print the unified diff:\n%s", out)
+	assert.Contains(t, out, "viol/viol.go (old)", "lone -diff must print a file header:\n%s", out)
+
+	after, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, srcViolations, string(after), "lone -diff must not modify the file:\n%s", after)
+}
+
+func TestCLI_LoneDiffAfterValueFlag(t *testing.T) {
+	// A value flag before -diff must not hide it from promotion:
+	// `-max-line-len 120 -diff` still previews, not checks.
+	bin := buildCLI(t)
+	root := writePkg(t, map[string]string{"viol/viol.go": srcViolations})
+
+	out, code := runCLI(t, bin, root, "-max-line-len", "120", "-diff", "./viol")
+	require.Zero(t, code, "value flag + -diff must exit 0 (preview mode):\n%s", out)
+	assert.Contains(t, out, "func Long(a int, b string) error {", "value flag + -diff must print the diff:\n%s", out)
+}
+
 func TestCLI_FixRewritesFile(t *testing.T) {
 	bin := buildCLI(t)
 	root := writePkg(t, map[string]string{"viol/viol.go": srcViolations})

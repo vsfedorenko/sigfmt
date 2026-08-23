@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Standalone `sigfmt -diff ./...` dry-run mode: a lone `-diff` is promoted
+  to `-fix -diff` by the CLI entry point, so it previews all proposed
+  changes as a unified diff without writing files and exits 0 (the
+  `gofmt -d` behavior). Previously `-diff` without `-fix` silently
+  degraded to a plain check run — the upstream singlechecker only honors
+  `-diff` in combination with `-fix`.
+
 ## [1.4.2] — 2026-08-22
 
 ### Changed
