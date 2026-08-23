@@ -1,0 +1,19 @@
+package length60exact
+
+type R struct{}
+
+// MethFit: sig length incl receiver = 60 -> must collapse (inclusive limit).
+func (r *R) MethFit(
+	xxxxxxxxxxxxxxxxxxxx int,
+	second string,
+) { // want "Signature can be formatted more compactly"
+	_ = r
+}
+
+// MethOver: sig length incl receiver = 61 -> must stay multi-line.
+func (r *R) MethOver(
+	xxxxxxxxxxxxxxxxxxxx int,
+	second string,
+) {
+	_ = r
+}

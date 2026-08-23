@@ -1,0 +1,14 @@
+package length60exact
+
+// Struct func-field packing budget (limit 60, tab width 8): indent + the
+// one-line signature text, closing ")" rides free — same contract as
+// interface methods. One field per type: gofmt would pad-align sibling
+// field names into the signature text and shift the boundary.
+type SFit struct {
+	FnFit func(xxxxxxxxxxxxxxxxxxxxxx int, second string) // raw = 53 -> fits
+}
+
+type SOver struct {
+	FnOver func(xxxxxxxxxxxxxxxxxxxxxx int,
+		second string) // want "Signature can be formatted more compactly"
+}
