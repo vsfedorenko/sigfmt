@@ -75,7 +75,7 @@ includes the plugin, either from a released module version or from a local check
     version: v2.12.2 # any golangci-lint v2 release, see matrix below
     plugins:
       - module: 'github.com/vsfedorenko/sigfmt'
-        version: v1.2.0 # Replace with the latest released tag
+        version: v1.5.0 # Replace with the latest released tag
     ```
 
 2.  Run the command to build the custom binary:
@@ -247,7 +247,7 @@ The repo ships [`.pre-commit-hooks.yaml`](.pre-commit-hooks.yaml). Add to your
 ```yaml
 repos:
   - repo: https://github.com/vsfedorenko/sigfmt
-    rev: v1.2.0  # use the latest released tag
+    rev: v1.5.0  # use the latest released tag
     hooks:
       - id: sigfmt        # check only, blocks the commit on violations
       - id: sigfmt-fix    # manual stage: pre-commit run --hook-stage manual sigfmt-fix
