@@ -1,0 +1,36 @@
+package length100
+
+// --- Generics in pack mode (signatures too long to collapse) ---
+
+import "context"
+
+type PackConstraint interface {
+	int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | uintptr | float32 | float64 | complex64 | complex128 | string | bool
+}
+
+// GenericInterfaceMethodPack checks an interface method with generic type
+// parameters whose packed form still exceeds max-line-len: the packer must
+// wrap parameters across lines without touching the type-parameter list.
+type GenericInterfaceMethodPack[T PackConstraint, U comparable] interface {
+	FindWithAVeryLongMethodNameName(ctx context.Context, id U, filters map[string][]string,
+		options map[string]bool, metadata map[string]map[string]string) (T, error) // want "Signature can be formatted more compactly"
+}
+
+// GenericStructFieldsPack checks func-type struct fields on a generic struct:
+// multi-line field signatures must collapse into packed single-line fields.
+type GenericStructFieldsPack[T PackConstraint, U comparable] struct {
+	OnFirstEventName  func(ctx context.Context, event T) error // want "Signature can be formatted more compactly"
+	OnSecondEventName func(ctx context.Context, id U) error    // want "Signature can be formatted more compactly"
+}
+
+// GenericFuncNoCollapse checks a generic function whose signature exceeds
+// max-line-len even packed: funcs are conservative, no diagnostic expected.
+func GenericFuncNoCollapse[T PackConstraint, U comparable, V any](
+	ctx context.Context,
+	first T,
+	second U,
+	third V,
+	options map[string]string,
+) (T, error) {
+	return first, nil
+}
