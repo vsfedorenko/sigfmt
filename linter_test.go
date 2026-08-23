@@ -52,6 +52,7 @@ func TestLineWrap_Limits(t *testing.T) {
 		{"Limit_120", 120, "limits/length120"},
 		{"Limit_140", 140, "limits/length140"},
 		{"Limit_160", 160, "limits/length160"},
+		{"Limit_60_Boundary", 60, "limits/length60exact"},
 	}
 
 	for _, tt := range tests {
