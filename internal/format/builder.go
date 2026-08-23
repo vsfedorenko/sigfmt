@@ -27,10 +27,11 @@ func NewBuilder(cfg config.Settings, renderer *render.Renderer) *Builder {
 }
 
 // BuildReformattedSignature generates a multi-line signature with optimized parameter packing.
-func (b *Builder) BuildReformattedSignature(fset *token.FileSet, sig *domain.Signature) string {
+func (b *Builder) BuildReformattedSignature(file *source.File, sig *domain.Signature) string {
 	if sig.FuncType == nil {
 		return ""
 	}
+	fset := file.Fset()
 
 	var sb strings.Builder
 
@@ -55,7 +56,7 @@ func (b *Builder) BuildReformattedSignature(fset *token.FileSet, sig *domain.Sig
 		sb.WriteString(b.renderer.FieldList(fset, sig.FuncType.TypeParams, "[", "]"))
 	}
 
-	baseIndent := source.GetIndent(fset, sig.Start)
+	baseIndent := file.Indent(sig.Start)
 	indentUnit := "\t"
 	if strings.Contains(baseIndent, " ") && !strings.Contains(baseIndent, "\t") {
 		indentUnit = "    "

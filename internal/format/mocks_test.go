@@ -5,10 +5,9 @@
 package format
 
 import (
-	"go/token"
-
 	mock "github.com/stretchr/testify/mock"
 	"github.com/vsfedorenko/sigfmt/internal/domain"
+	"github.com/vsfedorenko/sigfmt/internal/pkg/source"
 )
 
 // NewMockStrategy creates a new instance of MockStrategy. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
@@ -39,8 +38,8 @@ func (_m *MockStrategy) EXPECT() *MockStrategy_Expecter {
 }
 
 // Apply provides a mock function for the type MockStrategy
-func (_mock *MockStrategy) Apply(fset *token.FileSet, sig *domain.Signature) (string, bool) {
-	ret := _mock.Called(fset, sig)
+func (_mock *MockStrategy) Apply(file *source.File, sig *domain.Signature) (string, bool) {
+	ret := _mock.Called(file, sig)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Apply")
@@ -48,16 +47,16 @@ func (_mock *MockStrategy) Apply(fset *token.FileSet, sig *domain.Signature) (st
 
 	var r0 string
 	var r1 bool
-	if returnFunc, ok := ret.Get(0).(func(*token.FileSet, *domain.Signature) (string, bool)); ok {
-		return returnFunc(fset, sig)
+	if returnFunc, ok := ret.Get(0).(func(*source.File, *domain.Signature) (string, bool)); ok {
+		return returnFunc(file, sig)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*token.FileSet, *domain.Signature) string); ok {
-		r0 = returnFunc(fset, sig)
+	if returnFunc, ok := ret.Get(0).(func(*source.File, *domain.Signature) string); ok {
+		r0 = returnFunc(file, sig)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(*token.FileSet, *domain.Signature) bool); ok {
-		r1 = returnFunc(fset, sig)
+	if returnFunc, ok := ret.Get(1).(func(*source.File, *domain.Signature) bool); ok {
+		r1 = returnFunc(file, sig)
 	} else {
 		r1 = ret.Get(1).(bool)
 	}
@@ -70,17 +69,17 @@ type MockStrategy_Apply_Call struct {
 }
 
 // Apply is a helper method to define mock.On call
-//   - fset *token.FileSet
+//   - file *source.File
 //   - sig *domain.Signature
-func (_e *MockStrategy_Expecter) Apply(fset any, sig any) *MockStrategy_Apply_Call {
-	return &MockStrategy_Apply_Call{Call: _e.mock.On("Apply", fset, sig)}
+func (_e *MockStrategy_Expecter) Apply(file any, sig any) *MockStrategy_Apply_Call {
+	return &MockStrategy_Apply_Call{Call: _e.mock.On("Apply", file, sig)}
 }
 
-func (_c *MockStrategy_Apply_Call) Run(run func(fset *token.FileSet, sig *domain.Signature)) *MockStrategy_Apply_Call {
+func (_c *MockStrategy_Apply_Call) Run(run func(file *source.File, sig *domain.Signature)) *MockStrategy_Apply_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 *token.FileSet
+		var arg0 *source.File
 		if args[0] != nil {
-			arg0 = args[0].(*token.FileSet)
+			arg0 = args[0].(*source.File)
 		}
 		var arg1 *domain.Signature
 		if args[1] != nil {
@@ -99,7 +98,7 @@ func (_c *MockStrategy_Apply_Call) Return(s string, b bool) *MockStrategy_Apply_
 	return _c
 }
 
-func (_c *MockStrategy_Apply_Call) RunAndReturn(run func(fset *token.FileSet, sig *domain.Signature) (string, bool)) *MockStrategy_Apply_Call {
+func (_c *MockStrategy_Apply_Call) RunAndReturn(run func(file *source.File, sig *domain.Signature) (string, bool)) *MockStrategy_Apply_Call {
 	_c.Call.Return(run)
 	return _c
 }

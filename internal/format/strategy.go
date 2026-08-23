@@ -11,19 +11,18 @@ import (
 	"github.com/vsfedorenko/sigfmt/internal/render"
 )
 
-// Strategy defines an algorithm for determining if and how a signature should be formatted.
+// Strategy applies a formatting shape to a signature.
 type Strategy interface {
-	// Name returns the name of the strategy (for debugging/logging).
+	// Name identifies the strategy in diagnostics and tests.
 	Name() string
+
 	// Apply checks if this strategy applies to the given signature.
-	// If it applies, it returns the new formatted text and true.
-	// If not, it returns empty string and false.
-	Apply(fset *token.FileSet, sig *domain.Signature) (string, bool)
+	// The file's source bytes are provided by the caller — strategies
+	// never read from disk themselves.
+	Apply(file *source.File, sig *domain.Signature) (string, bool)
 }
 
-// --- Concrete Strategies ---
-
-// CollapseStrategy checks if the signature fits on a single line.
+// CollapseStrategy collapses multi-line signatures that fit one line.
 type CollapseStrategy struct {
 	config   config.Settings
 	renderer *render.Renderer
@@ -35,11 +34,12 @@ func NewCollapseStrategy(cfg config.Settings, r *render.Renderer) *CollapseStrat
 
 func (s *CollapseStrategy) Name() string { return "Collapse" }
 
-func (s *CollapseStrategy) Apply(fset *token.FileSet, sig *domain.Signature) (string, bool) {
+func (s *CollapseStrategy) Apply(file *source.File, sig *domain.Signature) (string, bool) {
+	fset := file.Fset()
 	startLine := fset.Position(sig.Start).Line
 	endLine := fset.Position(sig.End).Line
 
-	baseIndent := source.GetIndent(fset, sig.Start)
+	baseIndent := file.Indent(sig.Start)
 	baseIndentLen := text.VisualLength(baseIndent, s.config.TabWidth)
 	oneLineVisualLen := text.VisualLength(sig.OneLineText, s.config.TabWidth)
 	// The suffix (struct tag) stays on the collapsed line — its width and
@@ -67,9 +67,9 @@ func NewParamGroupStrategy(cfg config.Settings, b *Builder) *ParamGroupStrategy 
 
 func (s *ParamGroupStrategy) Name() string { return "ParamGroup" }
 
-func (s *ParamGroupStrategy) Apply(fset *token.FileSet, sig *domain.Signature) (string, bool) {
+func (s *ParamGroupStrategy) Apply(file *source.File, sig *domain.Signature) (string, bool) {
 	if len(s.config.ParamGroups) > 0 {
-		return s.builder.BuildReformattedSignature(fset, sig), true
+		return s.builder.BuildReformattedSignature(file, sig), true
 	}
 	return "", false
 }
@@ -86,12 +86,12 @@ func NewDefinitionPackingStrategy(cfg config.Settings, b *Builder) *DefinitionPa
 
 func (s *DefinitionPackingStrategy) Name() string { return "DefinitionPacking" }
 
-func (s *DefinitionPackingStrategy) Apply(fset *token.FileSet, sig *domain.Signature) (string, bool) {
+func (s *DefinitionPackingStrategy) Apply(file *source.File, sig *domain.Signature) (string, bool) {
 	if sig.IsInterfaceMethod && s.config.PackInterfaceMethods {
-		return s.builder.BuildReformattedSignature(fset, sig), true
+		return s.builder.BuildReformattedSignature(file, sig), true
 	}
 	if sig.IsStructField && s.config.PackStructFields {
-		return s.builder.BuildReformattedSignature(fset, sig), true
+		return s.builder.BuildReformattedSignature(file, sig), true
 	}
 	return "", false
 }
@@ -107,10 +107,10 @@ func NewConsistencyStrategy(b *Builder) *ConsistencyStrategy {
 
 func (s *ConsistencyStrategy) Name() string { return "Consistency" }
 
-func (s *ConsistencyStrategy) Apply(fset *token.FileSet, sig *domain.Signature) (string, bool) {
+func (s *ConsistencyStrategy) Apply(file *source.File, sig *domain.Signature) (string, bool) {
 	// Only applies if parameters are NOT on separate lines (mixed style).
-	if !areParamsOnSeparateLines(fset, sig.FuncType.Params.List) {
-		return s.builder.BuildReformattedSignature(fset, sig), true
+	if !areParamsOnSeparateLines(file.Fset(), sig.FuncType.Params.List) {
+		return s.builder.BuildReformattedSignature(file, sig), true
 	}
 	return "", false
 }
@@ -128,13 +128,12 @@ func areParamsOnSeparateLines(fset *token.FileSet, params []*ast.Field) bool {
 	if len(params) <= 1 {
 		return true
 	}
-	prevLine := fset.Position(getFieldStartPos(params[0])).Line
-	for i := 1; i < len(params); i++ {
-		currentLine := fset.Position(getFieldStartPos(params[i])).Line
-		if currentLine == prevLine {
+
+	firstLine := fset.Position(getFieldStartPos(params[0])).Line
+	for _, f := range params[1:] {
+		if fset.Position(getFieldStartPos(f)).Line == firstLine {
 			return false
 		}
-		prevLine = currentLine
 	}
 	return true
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/vsfedorenko/sigfmt/internal/config"
 	"github.com/vsfedorenko/sigfmt/internal/domain"
 	"github.com/vsfedorenko/sigfmt/internal/format"
+	"github.com/vsfedorenko/sigfmt/internal/pkg/source"
 	"github.com/vsfedorenko/sigfmt/internal/render"
 )
 
@@ -57,6 +58,7 @@ func (p *PluginLineWrap) run(pass *analysis.Pass) (any, error) {
 	renderer := render.New(p.settings.TabWidth)
 	extractor := astinfo.New(renderer)
 	formatter := format.New(p.settings, renderer)
+	loader := source.NewLoader(pass.Fset, pass.ReadFile)
 
 	for _, f := range pass.Files {
 		if isGenerated(pass, f) {
@@ -72,14 +74,14 @@ func (p *PluginLineWrap) run(pass *analysis.Pass) (any, error) {
 			switch x := n.(type) {
 			case *ast.FuncDecl:
 				if sig := extractor.FuncDecl(pass.Fset, x); sig != nil {
-					p.checkAndReport(pass, sig, formatter)
+					p.checkAndReport(pass, sig, formatter, loader)
 				}
 			case *ast.FuncLit:
 				if sig := extractor.FuncLit(pass.Fset, x); sig != nil {
-					p.checkAndReport(pass, sig, formatter)
+					p.checkAndReport(pass, sig, formatter, loader)
 				}
 			case *ast.TypeSpec:
-				p.handleTypeSpec(pass, x, extractor, formatter)
+				p.handleTypeSpec(pass, x, extractor, formatter, loader)
 			}
 			return true
 		})
@@ -172,16 +174,16 @@ func hostBuildTags(tag string) bool {
 	return false
 }
 
-func (p *PluginLineWrap) handleTypeSpec(pass *analysis.Pass, spec *ast.TypeSpec, extractor *astinfo.Extractor, formatter *format.Formatter) {
+func (p *PluginLineWrap) handleTypeSpec(pass *analysis.Pass, spec *ast.TypeSpec, extractor *astinfo.Extractor, formatter *format.Formatter, loader *source.Loader) {
 	switch t := spec.Type.(type) {
 	case *ast.InterfaceType:
-		p.handleFields(pass, t.Methods, extractor.Method, formatter)
+		p.handleFields(pass, t.Methods, extractor.Method, formatter, loader)
 	case *ast.StructType:
-		p.handleFields(pass, t.Fields, extractor.StructField, formatter)
+		p.handleFields(pass, t.Fields, extractor.StructField, formatter, loader)
 	}
 }
 
-func (p *PluginLineWrap) handleFields(pass *analysis.Pass, fields *ast.FieldList, extract extractFunc, formatter *format.Formatter) {
+func (p *PluginLineWrap) handleFields(pass *analysis.Pass, fields *ast.FieldList, extract extractFunc, formatter *format.Formatter, loader *source.Loader) {
 	if fields == nil {
 		return
 	}
@@ -200,7 +202,7 @@ func (p *PluginLineWrap) handleFields(pass *analysis.Pass, fields *ast.FieldList
 			if field.Tag != nil {
 				sig.SuffixText = " " + field.Tag.Value
 			}
-			p.checkAndReport(pass, sig, formatter)
+			p.checkAndReport(pass, sig, formatter, loader)
 		}
 	}
 }
@@ -210,8 +212,8 @@ func (p *PluginLineWrap) handleFields(pass *analysis.Pass, fields *ast.FieldList
 // at once, which the extractor renders and rewrites together.
 type extractFunc = func(fset *token.FileSet, names []*ast.Ident, ft *ast.FuncType) *domain.Signature
 
-func (p *PluginLineWrap) checkAndReport(pass *analysis.Pass, sig *domain.Signature, formatter *format.Formatter) {
-	newText := formatter.Check(pass.ReadFile, pass.Fset, sig)
+func (p *PluginLineWrap) checkAndReport(pass *analysis.Pass, sig *domain.Signature, formatter *format.Formatter, loader *source.Loader) {
+	newText := formatter.Check(loader, sig)
 	if newText != "" {
 		p.report(pass, sig, newText)
 	}

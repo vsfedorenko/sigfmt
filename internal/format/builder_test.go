@@ -97,7 +97,7 @@ func TestBuilder_BuildReformattedSignature(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := builder.BuildReformattedSignature(fset, tt.sig)
+			result := builder.BuildReformattedSignature(newSyntheticFile(fset), tt.sig)
 			if tt.contains != "" {
 				assert.Contains(t, result, tt.contains)
 			} else {

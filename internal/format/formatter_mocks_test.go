@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/vsfedorenko/sigfmt/internal/domain"
+	"github.com/vsfedorenko/sigfmt/internal/pkg/source"
 )
 
 // The Formatter's contract with its strategies: first applied wins, the
@@ -25,7 +26,7 @@ func TestFormatter_FirstAppliedStrategyWins(t *testing.T) {
 	// second.Apply must never be called: no EXPECT registered
 
 	f := &Formatter{strategies: []Strategy{first, second}}
-	out := f.check(testFset(t), testSig(t))
+	out := f.check(testSourceFile(t), testSig(t))
 	assert.Equal(t, "formatted", out)
 }
 
@@ -34,7 +35,7 @@ func TestFormatter_NoStrategyApplies(t *testing.T) {
 	s.EXPECT().Apply(mock.Anything, mock.Anything).Return("", false)
 
 	f := &Formatter{strategies: []Strategy{s}}
-	out := f.check(testFset(t), testSig(t))
+	out := f.check(testSourceFile(t), testSig(t))
 	assert.Empty(t, out, "no strategy applied must yield empty text")
 }
 
@@ -44,18 +45,18 @@ func TestFormatter_NilParamsShortCircuits(t *testing.T) {
 
 	f := &Formatter{strategies: []Strategy{s}}
 	sig := &domain.Signature{FuncType: &ast.FuncType{}}
-	assert.Empty(t, f.check(testFset(t), sig))
+	assert.Empty(t, f.check(testSourceFile(t), sig))
 }
 
 // --- helpers ---
 
-func testFset(t *testing.T) *token.FileSet {
+func testSourceFile(t *testing.T) *source.File {
 	t.Helper()
 	fset := token.NewFileSet()
 	src := "package p\n\nfunc F(a int) error { return nil }\n"
-	_, err := parser.ParseFile(fset, "a.go", src, 0)
+	tf, err := parser.ParseFile(fset, "a.go", src, 0)
 	require.NoError(t, err)
-	return fset
+	return source.NewFile(fset, fset.File(tf.Pos()), []byte(src))
 }
 
 func testSig(t *testing.T) *domain.Signature {

@@ -121,7 +121,7 @@ type Repository interface {
 				IsInterfaceMethod: true,
 			}
 
-			newText, applied := strategy.Apply(fset, sig)
+			newText, applied := strategy.Apply(newSyntheticFile(fset), sig)
 
 			if len(tt.paramGroups) > 0 {
 				assert.True(t, applied, "Strategy should apply when param groups are configured")
@@ -175,7 +175,7 @@ type Service interface {
 		IsInterfaceMethod: true,
 	}
 
-	result := builder.BuildReformattedSignature(fset, sig)
+	result := builder.BuildReformattedSignature(newSyntheticFile(fset), sig)
 
 	assert.Contains(t, result, "Process(")
 	assert.Contains(t, result, "context.Context")
@@ -229,7 +229,7 @@ type Store interface {
 		OneLineText:       "Execute(ctx context.Context, tx *sql.Tx, query string, args []interface{}) error",
 	}
 
-	result := builder.BuildReformattedSignature(fset, sig)
+	result := builder.BuildReformattedSignature(newSyntheticFile(fset), sig)
 
 	assert.Contains(t, result, "Execute(")
 	assert.Contains(t, result, "context.Context")
@@ -277,7 +277,7 @@ type Empty interface {
 		OneLineText:       "NoParams() error",
 	}
 
-	result := builder.BuildReformattedSignature(fset, sig)
+	result := builder.BuildReformattedSignature(newSyntheticFile(fset), sig)
 
 	assert.Contains(t, result, "NoParams()")
 	assert.Contains(t, result, "error")
