@@ -7,7 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-08-23
+
 ### Changed
+- **Performance: one source read per analyzer pass.** Profiling the
+  packed-renderer roadmap item found the real hotspot was not the
+  renderer: every indentation lookup (`source.GetIndent`) re-read the
+  whole file from disk — up to 4 reads per signature (3 indent lookups +
+  the no-op guard), 50% of analyzer CPU in syscalls and 78% of allocated
+  bytes. A new `source.Loader` (wired over `analysis.Pass.ReadFile`,
+  caching per filename) hands every strategy and guard the same
+  `source.File`. Benchmarks: violations corpus at gofmt parity (1.81× →
+  0.98×), clean corpus faster than gofmt (1.98× → 0.62×), analyzer-only
+  3.7×/8.2× faster, allocations −61%. Behavior-neutral: golden files
+  byte-identical, full suite green. (#64)
 - golangci-lint compatibility matrix extended to v2.13.1 (both integration
   paths live-verified: proxy build against the published v1.5.0 tag and the
   local `path:` build — diagnostics, `--fix`, idempotent re-run). CI's
