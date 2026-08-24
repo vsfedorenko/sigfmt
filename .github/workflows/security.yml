@@ -15,7 +15,7 @@ jobs:
     name: govulncheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
           go-version: 'stable'
@@ -33,7 +33,7 @@ jobs:
       matrix:
         language: [go]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
@@ -45,7 +45,7 @@ jobs:
     name: gitleaks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Scan full history for secrets
@@ -62,7 +62,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/dependency-review-action@v5
         with:
           # Fail only on HIGH/CRITICAL; moderate findings are reported but
