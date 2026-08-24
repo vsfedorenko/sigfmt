@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.2] — 2026-08-24
+
 ### Added
 - Package documentation (`doc.go`) with the settings reference, and
   runnable godoc examples: plugin configuration via `New`, the standalone
