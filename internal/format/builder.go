@@ -57,18 +57,23 @@ func (b *Builder) BuildReformattedSignature(file *source.File, sig *domain.Signa
 	}
 
 	baseIndent := file.Indent(sig.Start)
-	indentUnit := "\t"
-	if strings.Contains(baseIndent, " ") && !strings.Contains(baseIndent, "\t") {
+	indentUnit := "	"
+	if strings.Contains(baseIndent, " ") && !strings.Contains(baseIndent, "	") {
 		indentUnit = "    "
 	}
 	paramIndent := baseIndent + indentUnit
 	baseIndentLen := text.VisualLength(baseIndent, b.config.TabWidth)
 
-	sb.WriteString(b.renderFieldListGrouped(fset, sig.FuncType.Params, sig, "(", ")", paramIndent, baseIndent, baseIndentLen))
-
+	// The results rendering is asked for three times below (packing
+	// budgets in renderFieldListGrouped and trailerLen, plus the final
+	// append) — render once and share.
+	var resultsText string
 	if sig.FuncType.Results != nil {
-		sb.WriteString(b.renderer.Results(fset, sig.FuncType.Results))
+		resultsText = b.renderer.Results(fset, sig.FuncType.Results)
 	}
+
+	sb.WriteString(b.renderFieldListGrouped(fset, sig.FuncType.Params, sig, "(", ")", paramIndent, baseIndent, baseIndentLen, resultsText))
+	sb.WriteString(resultsText)
 
 	return sb.String()
 }
@@ -79,29 +84,30 @@ func (b *Builder) BuildReformattedSignature(file *source.File, sig *domain.Signa
 // For tagless signatures it returns 0: their packing budget stays exactly
 // the historical one, keeping every existing golden byte-identical. The
 // closing bracket is NOT included — the writer adds it where needed.
-func (b *Builder) trailerLen(fset *token.FileSet, sig *domain.Signature) int {
+// resultsText is the already-rendered results ("" when absent).
+func (b *Builder) trailerLen(sig *domain.Signature, resultsText string) int {
 	if sig.SuffixText == "" {
 		return 0
 	}
 	n := text.VisualLength(sig.SuffixText, b.config.TabWidth)
 	if sig.FuncType.Results != nil {
-		n += text.VisualLength(b.renderer.Results(fset, sig.FuncType.Results), b.config.TabWidth)
+		n += text.VisualLength(resultsText, b.config.TabWidth)
 	}
 	return n
 }
 
-func (b *Builder) renderFieldListGrouped(fset *token.FileSet, fl *ast.FieldList, sig *domain.Signature, openBracket, closeBracket, indent, parentIndent string, baseIndentLen int) string {
+func (b *Builder) renderFieldListGrouped(fset *token.FileSet, fl *ast.FieldList, sig *domain.Signature, openBracket, closeBracket, indent, parentIndent string, baseIndentLen int, resultsText string) string {
 	if fl == nil || len(fl.List) == 0 {
 		return openBracket + closeBracket
 	}
 
 	prefixLen := baseIndentLen + text.VisualLength(sig.OneLineText, b.config.TabWidth) - text.VisualLength(b.renderer.FieldList(fset, fl, openBracket, closeBracket), b.config.TabWidth)
 	if sig.FuncType.Results != nil {
-		prefixLen -= text.VisualLength(b.renderer.Results(fset, sig.FuncType.Results), b.config.TabWidth)
+		prefixLen -= text.VisualLength(resultsText, b.config.TabWidth)
 	}
 	prefixLen += text.VisualLength(openBracket, b.config.TabWidth)
 
-	writer := b.newBuilderLineWriter(indent, parentIndent, openBracket, prefixLen, b.trailerLen(fset, sig))
+	writer := b.newBuilderLineWriter(indent, parentIndent, openBracket, prefixLen, b.trailerLen(sig, resultsText))
 
 	i := 0
 	for i < len(fl.List) {
