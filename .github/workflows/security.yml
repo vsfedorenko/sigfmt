@@ -63,7 +63,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
+      - uses: actions/dependency-review-action@v5
         with:
           # Fail only on HIGH/CRITICAL; moderate findings are reported but
           # do not block — the Go toolchain patch cadence makes blanket
