@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -49,6 +50,30 @@ var commentFuzzCorpus = []string{
 	// Mixed: one commented signature (must be skipped) and one clean
 	// signature (must still be collapsed).
 	"package p\n\nfunc G(\n\ta int, // keep me\n\tb int,\n) {\n}\n\nfunc H(\n\ta int,\n\tb int,\n) {\n}\n",
+
+	// Generic function with comments inside the parameter list — the
+	// generics renderer branch (#61) must skip it, not rewrite it.
+	"package p\n\nfunc Map[T any, U any](\n\titems []T, // input slice\n\tfn func(T) U, // mapping fn\n) []U {\n\treturn nil\n}\n",
+	// Generic interface method: comment inside the parameters of a method
+	// whose interface type is generic.
+	"package p\n\ntype I[T any] interface {\n\tM(\n\t\tx T, // x\n\t) T\n}\n",
+	// Multi-name struct field (Handler, Fallback) with a comment inside
+	// the func-typed field signature — the multi-name renderer branch must
+	// skip the whole field, keeping every name.
+	"package p\n\ntype T struct {\n\tHandler, Fallback func(\n\t\tw string, // w\n\t\tr string,\n\t) error\n}\n",
+	// Variadic parameter carrying a trailing comment — the ellipsis
+	// branch must skip the signature.
+	"package p\n\nfunc V(\n\ta int, // a\n\trest ...string, // rest\n) error {\n\treturn nil\n}\n",
+	// Method with a receiver and a commented parameter list — the
+	// receiver-prefix branch must skip it.
+	"package p\n\ntype S struct{}\n\nfunc (s *S) M(\n\tx int, // x\n\ty int,\n) error {\n\treturn nil\n}\n",
+	// Struct tag after a commented func-typed field: the tag is outside
+	// the rewritten span and must survive untouched.
+	"package p\n\ntype T struct {\n\tF func(\n\t\tx int, // x\n\t\ty int,\n\t) error `json:\"f\"`\n}\n",
+	// Plain-type fast path (#53): every parameter type is a plain
+	// identifier rendered without go/printer — a comment must still veto
+	// the rewrite before the fast path runs.
+	"package p\n\nfunc FP(\n\ta int, // a\n\tb string, // b\n\tc bool, // c\n\tr rune, // r\n) error {\n\treturn nil\n}\n",
 }
 
 // TestCommentPreservationZeroLoss runs the public analyzer over the corpus,
@@ -106,8 +131,9 @@ func TestCommentPreservationZeroLoss(t *testing.T) {
 			_, err = parser.ParseFile(token.NewFileSet(), path, out, parser.ParseComments)
 			require.NoError(t, err, "formatted output does not parse:\n%s", out)
 
-			// Case 8 (mixed): the clean signature must still be collapsed.
-			if i == len(commentFuzzCorpus)-1 {
+			// The mixed case (commented G alongside clean H): the clean
+			// signature must still be collapsed.
+			if strings.Contains(src, "func G(") {
 				assert.Contains(t, out, "func H(a int, b int) {", "clean signature was not collapsed alongside the commented one:\n%s", out)
 			}
 		})
