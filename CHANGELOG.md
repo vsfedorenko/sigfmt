@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Performance: render results once per signature.** The packing builder
+  asked for the same results-list rendering three times per signature
+  (packing budgets in `renderFieldListGrouped` and `trailerLen`, plus the
+  final append) — each a full AST walk with string building. The rendering
+  is computed once in `BuildReformattedSignature` and threaded through the
+  packing paths. Benchmarks (interleaved against `main`, 3 rounds):
+  violations profile −4% time / −600 allocs per op; clean profile
+  unchanged (±0 within noise). This closes the roadmap's result-caching
+  item: measured memoization variants (per-node map cache, DTO fields on
+  `domain.Signature`) were tried and rejected — both cost more than the
+  duplicate renders they saved on the clean (incremental) profile most
+  real runs hit; see PR for numbers.
+
 ## [1.5.2] — 2026-08-24
 
 ### Added
