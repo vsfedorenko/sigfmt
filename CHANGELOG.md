@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.3] — 2026-08-25
+
 ### Changed
 - **Performance: render results once per signature.** The packing builder
   asked for the same results-list rendering three times per signature
@@ -20,6 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `domain.Signature`) were tried and rejected — both cost more than the
   duplicate renders they saved on the clean (incremental) profile most
   real runs hit; see PR for numbers.
+
+### Fixed
+- Zero-comment-loss corpus extended to the newer renderer branches:
+  generics (func and interface method), multi-name field groups,
+  variadic parameters, methods with receivers, tagged fields, and the
+  plain-type fast path. For every entry the full fix cycle asserts three
+  invariants — the applied output parses, stays gofmt-fixed, and loses
+  zero comments vs the original. The probe found no rendering bugs:
+  the comment veto already guards all newer branches (#75).
 
 ## [1.5.2] — 2026-08-24
 
